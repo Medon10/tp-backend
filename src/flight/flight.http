@@ -1,0 +1,39 @@
+### get all
+GET http://localhost:3000/api/flights
+
+### get one
+GET http://localhost:3000/api/flights/b6a77cb4-qfae-qef2-ae83-ffb11f09e9b4
+
+### create
+POST http://localhost:3000/api/flights 
+Content-Type: application/json
+
+{
+    "CiudadSalida":  "Cancun", 
+    "CiudadLlegada": "Tokyo", 
+    "duracion": 11, 
+    "tipo": "bussiness"
+}
+
+### modificar recurso completo e idempotente
+PUT http://localhost:3000/api/flights/b6a77cb4-qfae-qef2-ae83-ffb11f09e9b4  
+Content-Type: application/json
+
+{
+    "CiudadSalida":  "Lima", 
+    "CiudadLlegada": "Roma", 
+    "duracion": 8, 
+    "tipo": "bussiness"
+}
+
+### modificar recurso parcial
+PATCH http://localhost:3000/api/flights/b6a77cb4-qfae-qef2-ae83-ffb11f09e9b4  
+Content-Type: application/json
+
+{
+    "CiudadSalida":  "Rosario", 
+    "tipo": "economica"
+}
+
+###borrar recurso
+DELETE http://localhost:3000/api/flights/b6a77cb4-qfae-qef2-ae83-ffb11f09e9b4

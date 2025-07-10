@@ -1,0 +1,41 @@
+### get all
+GET http://localhost:3000/api/users
+
+### get one
+GET http://localhost:3000/api/users/c29d9d3c-bb78-4a6e-8e98-455346734db2
+
+### create
+POST http://localhost:3000/api/users 
+Content-Type: application/json
+
+{
+    "nombre":  "Kevin", 
+    "apellido": "Dolver", 
+    "email": "kevindovler888@gmail.com", 
+    "contraseña": "kd05052005",
+    "telefono": "54341509973"
+}
+
+### modificar recurso completo e idempotente
+PUT http://localhost:3000/api/users/c29d9d3c-bb78-4a6e-8e98-455346734db2 
+Content-Type: application/json
+
+{
+    "nombre":  "Juampi", 
+    "apellido": "Binomio", 
+    "email": "jb999@gmail.com", 
+    "contraseña": "jb02022002",
+    "telefono": "5434150654"
+}
+
+### modificar recurso parcial
+PATCH http://localhost:3000/api/users/c29d9d3c-bb78-4a6e-8e98-455346734db2
+Content-Type: application/json
+
+{
+    "email":  "juanbinomio@gmail.com", 
+    "contraseña": "jb01011001"
+}
+
+###borrar recurso
+DELETE http://localhost:3000/api/users/c29d9d3c-bb78-4a6e-8e98-455346734db2
