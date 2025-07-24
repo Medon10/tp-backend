@@ -9,10 +9,11 @@ POST http://localhost:3000/api/flights
 Content-Type: application/json
 
 {
-    "CiudadSalida":  "Cancun", 
-    "CiudadLlegada": "Tokyo", 
-    "duracion": 11, 
-    "tipo": "bussiness"
+    "fechahora_salida":  "8 de febrero 2026 10:00", 
+    "fechahora_llegada": "8 de febrero 2026 18:00", 
+    "duracion": 6, 
+    "aerolinea": "american airlines",
+    "cantidad_asientos": 200
 }
 
 ### modificar recurso completo e idempotente
@@ -20,10 +21,11 @@ PUT http://localhost:3000/api/flights/b6a77cb4-qfae-qef2-ae83-ffb11f09e9b4
 Content-Type: application/json
 
 {
-    "CiudadSalida":  "Lima", 
-    "CiudadLlegada": "Roma", 
+    "fechahora_salida":  "4 de junio 2026 12:00", 
+    "fechahora_llegada": "4 de junio 2026 20:00", 
     "duracion": 8, 
-    "tipo": "bussiness"
+    "aerolinea": "flybondi",
+    "cantidad_asientos": 130
 }
 
 ### modificar recurso parcial
@@ -31,8 +33,8 @@ PATCH http://localhost:3000/api/flights/b6a77cb4-qfae-qef2-ae83-ffb11f09e9b4
 Content-Type: application/json
 
 {
-    "CiudadSalida":  "Rosario", 
-    "tipo": "economica"
+    "duracion":  "5", 
+    "cantidad_asientos": "80"
 }
 
 ###borrar recurso

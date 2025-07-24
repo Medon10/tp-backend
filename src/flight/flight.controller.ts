@@ -6,10 +6,11 @@ const repository = new FlightRepository()
 
 function sanitizeFlightInput(req: Request, res: Response, next: NextFunction) {
     req.body.sanitizedInput = {
-        CiudadSalida: req.body.CiudadSalida,
-        CiudadLlegada: req.body.CiudadLlegada,
+        fechahora_salida: req.body.fechahora_salida,
+        fechahora_llegada: req.body.fechahora_llegada,
         duracion: req.body.duracion,
-        tipo: req.body.tipo,
+        aerolinea: req.body.aerolinea,
+        cantidad_asientos: req.body.cantidad_asientos
     }
     //mas validaciones acá
 
@@ -21,15 +22,16 @@ function sanitizeFlightInput(req: Request, res: Response, next: NextFunction) {
     next()
 }
 
-function findAll (req:Request, res:Response) {
-    res.json({data:repository.findAll()})
+async function findAll (req:Request, res:Response) {
+    const flights = await repository.findAll()
+    res.json({data:flights})
 }
 
-function findOne(req: Request, res: Response) {
+async function findOne(req: Request, res: Response) {
     const id = req.params.id
-    const flight = repository.findOne({ id })
+    const flight = await repository.findOne({ id })
     if (!flight){
-    res.status(404).send({message:'No encontrado'})
+    return res.status(404).send({message:'No encontrado'})
     }
     res.json({data:flight})
 }
@@ -37,10 +39,11 @@ function findOne(req: Request, res: Response) {
 function add(req: Request, res: Response)  {
     const input = req.body.sanitizedInput
     const flightInput = new Flight(
-        input.CiudadSalida, 
-        input.CiudadLlegada, 
+        input.fechahora_salida, 
+        input.fechahora_llegada, 
         input.duracion, 
-        input.tipo
+        input.aerolinea,
+        input.cantidad_asientos
     )
     const flight = repository.add(flightInput)
     res.status(201).send({message: 'vuelo creado', data: flight})

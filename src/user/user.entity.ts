@@ -8,5 +8,5 @@ export class User {
         public contraseña:string, 
         public telefono:number,
         public id?: number
-    ) {}
+    ) {} 
 }

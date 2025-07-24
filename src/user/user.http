@@ -2,7 +2,7 @@
 GET http://localhost:3000/api/users
 
 ### get one
-GET http://localhost:3000/api/users/c29d9d3c-bb78-4a6e-8e98-455346734db2
+GET http://localhost:3000/api/users/1
 
 ### create
 POST http://localhost:3000/api/users 

@@ -1,0 +1,36 @@
+### get all
+GET http://localhost:3000/api/destiny
+
+### get one
+GET http://localhost:3000/api/destiny/1
+
+### create
+POST http://localhost:3000/api/destinies
+Content-Type: application/json
+
+{
+    "nombre":  "Rio de Janeiro", 
+    "transporte": ["Colectivo", "Bicicleta"], 
+    "actividades": ["Playa", "Jugar"]
+}
+
+### modificar recurso completo e idempotente
+PUT http://localhost:3000/api/destinies/c29d9d3c-bb78-4a6e-8e98-455346734db3 
+Content-Type: application/json
+
+{
+    "nombre":  "Venecia", 
+    "transporte": ["Bote"], 
+    "actividades": ["Comida", "Paseo"]
+}
+
+### modificar recurso parcial
+PATCH http://localhost:3000/api/destinies/c29d9d3c-bb78-4a6e-8e98-455346734db3
+Content-Type: application/json
+
+{
+    "transporte":  ["Bote" , "Kayak"] 
+}
+
+###borrar recurso
+DELETE http://localhost:3000/api/users/c29d9d3c-bb78-4a6e-8e98-455346734db3

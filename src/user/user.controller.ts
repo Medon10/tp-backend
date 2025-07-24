@@ -28,11 +28,11 @@ async function findAll (req:Request, res:Response) {
     res.json({data:users})
 }
 
-function findOne(req: Request, res: Response) {
+async function findOne(req: Request, res: Response) {
     const id = req.params.id
-    const user = repository.findOne({ id })
+    const user = await repository.findOne({ id })
     if (!user){
-    res.status(404).send({message:'No encontrado'})
+    return res.status(404).send({message:'No encontrado'})
     }
     res.json({data:user})
 }
