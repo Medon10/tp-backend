@@ -1,0 +1,41 @@
+### get all
+GET http://localhost:3000/api/trips
+
+### get one
+GET http://localhost:3000/api/trips/1
+
+### create
+POST http://localhost:3000/api/trips
+Content-Type: application/json
+
+{
+    "fecha_salida": "2023-10-01 10:00",
+    "fecha_llegada": "2023-10-01 12:00",
+    "estado": "activo",
+    "usuario_id": 1,
+    "destino_id": 2
+}
+
+### modificar recurso completo e idempotente
+PUT http://localhost:3000/api/trips/1
+Content-Type: application/json
+
+{
+    "fecha_salida": "2026-10-01 13:00",
+    "fecha_llegada": "2026-10-01 19:00",
+    "estado": "completado",
+    "usuario_id": 1,
+    "destino_id": 2
+}
+
+### modificar recurso parcial
+PATCH http://localhost:3000/api/trips/1
+Content-Type: application/json
+
+{
+    "usuario_id": 2,
+    "destino_id": 3
+}
+
+###borrar recurso
+DELETE http://localhost:3000/api/trips/1

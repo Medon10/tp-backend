@@ -2,13 +2,17 @@ import { User } from "./user.entity.js";
 import { Repository } from "../shared/repository.js";
 import { pool } from '../shared/bdd/mysql.bdd.js'
 import { RowDataPacket } from "mysql2";
-
+import { Trip } from "../trip/trip.entity.js";
 
 
 export class UserRepository implements Repository<User>{
     
     public async findAll(): Promise<User [] | undefined>{
         const [users] = await pool.query('select * from users')
+        for (const user of users as User[]) {
+            const [trips] = await pool.query('select * from trips where usuario_id = ?', [user.id])
+            user.trips = trips as Trip[];
+        }
         return users as User[]
     }
 

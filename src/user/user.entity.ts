@@ -1,4 +1,5 @@
 import crypto from 'node:crypto'
+import { Trip } from '../trip/trip.entity.js';
 
 export class User {
     constructor(
@@ -7,6 +8,7 @@ export class User {
         public email:string, 
         public contraseña:string, 
         public telefono:number,
-        public id?: number
+        public id?: number,
+        public trips?: Trip[],
     ) {} 
 }

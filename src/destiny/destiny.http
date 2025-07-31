@@ -1,8 +1,8 @@
 ### get all
-GET http://localhost:3000/api/destiny
+GET http://localhost:3000/api/destinies
 
 ### get one
-GET http://localhost:3000/api/destiny/1
+GET http://localhost:3000/api/destinies/1
 
 ### create
 POST http://localhost:3000/api/destinies
@@ -15,7 +15,7 @@ Content-Type: application/json
 }
 
 ### modificar recurso completo e idempotente
-PUT http://localhost:3000/api/destinies/c29d9d3c-bb78-4a6e-8e98-455346734db3 
+PUT http://localhost:3000/api/destinies/1
 Content-Type: application/json
 
 {

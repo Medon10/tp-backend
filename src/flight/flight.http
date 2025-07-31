@@ -2,17 +2,17 @@
 GET http://localhost:3000/api/flights
 
 ### get one
-GET http://localhost:3000/api/flights/b6a77cb4-qfae-qef2-ae83-ffb11f09e9b4
+GET http://localhost:3000/api/flights/1
 
 ### create
 POST http://localhost:3000/api/flights 
 Content-Type: application/json
 
 {
-    "fechahora_salida":  "8 de febrero 2026 10:00", 
-    "fechahora_llegada": "8 de febrero 2026 18:00", 
+    "fechahora_salida":  "2026-02-08 10:00", 
+    "fechahora_llegada": "2026-02-08 18:00", 
     "duracion": 6, 
-    "aerolinea": "american airlines",
+    "aerolinea": "American Airlines",
     "cantidad_asientos": 200
 }
 
