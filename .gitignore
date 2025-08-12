@@ -22,8 +22,11 @@ dist/**/*
 !.vscode/extensions.json
 !.vscode/*.code-snippets
 
-## local jistory for vscode
+## local history for vscode
 .history/
 
 ## built vscode extensions
 *.vsix
+
+#contraseña bdd
+ormpassword.ts

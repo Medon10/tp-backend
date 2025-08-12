@@ -1,5 +1,6 @@
 import { Router } from "express";
-import { sanitizeUserInput, findAll, findOne, add, update, remove } from "./user.controller.js";
+import { findAll, findOne, add, update, remove } from "./user.controller.js";
+import { sanitizeUserInput } from "../shared/middleware/sanitizeUsers.js";
 
 export const userRouter = Router()
 

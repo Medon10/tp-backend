@@ -1,12 +1,34 @@
-import crypto from 'node:crypto'
+import { Entity, Property, ManyToOne, OneToMany, Collection } from '@mikro-orm/core';
+import { BaseEntity } from '../shared/bdd/BaseEntity.js';
+import { Destiny } from '../destiny/destiny.entity.js';
+import { Trip } from '../trip/trip.entity.js';
 
-export class Flight {
-    constructor(
-        public fechahora_salida:string, //ISO YYYY-MM-DD HH:mm
-        public fechahora_llegada:string, //ISO YYYY-MM-DD HH:mm
-        public duracion:number, 
-        public aerolinea:string,
-        public cantidad_asientos:number, 
-        public id?: number
-    ) {}
+@Entity({ tableName: 'flights' })
+export class Flight extends BaseEntity {
+    @Property()
+    fechahora_salida!: string; // ISO
+
+    @Property()
+    fechahora_llegada!: string;
+
+    @Property()
+    duracion!: number;
+
+    @Property()
+    aerolinea!: string;
+
+    @Property()
+    cantidad_asientos!: number;
+    
+    @Property({ fieldName: 'montoVuelo'})
+    montoVuelo!: number;
+
+    @Property()
+    origen!: string;
+
+    @ManyToOne(() => Destiny)
+    destino!: Destiny;
+
+    @OneToMany(() => Trip, trip => trip.flight)
+    trips = new Collection<Trip>(this);
 }

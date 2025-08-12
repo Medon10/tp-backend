@@ -9,9 +9,9 @@ POST http://localhost:3000/api/destinies
 Content-Type: application/json
 
 {
-    "nombre":  "Rio de Janeiro", 
-    "transporte": ["Colectivo", "Bicicleta"], 
-    "actividades": ["Playa", "Jugar"]
+    "nombre":  "Tierra del Fuego", 
+    "transporte": ["Auto"],
+    "actividades": ["Nieve", "Sky"]
 }
 
 ### modificar recurso completo e idempotente
@@ -25,7 +25,7 @@ Content-Type: application/json
 }
 
 ### modificar recurso parcial
-PATCH http://localhost:3000/api/destinies/c29d9d3c-bb78-4a6e-8e98-455346734db3
+PATCH http://localhost:3000/api/destinies/1
 Content-Type: application/json
 
 {
@@ -33,4 +33,4 @@ Content-Type: application/json
 }
 
 ###borrar recurso
-DELETE http://localhost:3000/api/users/c29d9d3c-bb78-4a6e-8e98-455346734db3
+DELETE http://localhost:3000/api/destinies/2

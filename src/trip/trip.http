@@ -9,11 +9,12 @@ POST http://localhost:3000/api/trips
 Content-Type: application/json
 
 {
-    "fecha_salida": "2023-10-01 10:00",
-    "fecha_llegada": "2023-10-01 12:00",
-    "estado": "activo",
-    "usuario_id": 1,
-    "destino_id": 2
+    "fecha_reserva": "2025-12-08",
+    "valor_reserva": 700,
+    "estado": "pendiente",
+    "usuario_id": 3,
+    "destino_id": 3,
+    "flight_id": 3
 }
 
 ### modificar recurso completo e idempotente

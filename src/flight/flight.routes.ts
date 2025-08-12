@@ -1,5 +1,6 @@
 import { Router } from "express";
-import { sanitizeFlightInput, findAll, findOne, add, update, remove } from "./flight.controller.js";
+import {  findAll, findOne, add, update, remove } from "./flight.controller.js";
+import { sanitizeFlightInput } from "../shared/middleware/sanitizeFlight.js";
 
 export const flightRouter = Router()
 

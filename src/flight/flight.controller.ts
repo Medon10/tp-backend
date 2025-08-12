@@ -1,75 +1,146 @@
 import {Request, Response, NextFunction} from "express"
-import { FlightRepository } from "./flight.repository.js"
+import { orm } from "../shared/bdd/orm.js"
 import { Flight } from "./flight.entity.js"
-
-const repository = new FlightRepository()
-
-function sanitizeFlightInput(req: Request, res: Response, next: NextFunction) {
-    req.body.sanitizedInput = {
-        fechahora_salida: req.body.fechahora_salida,
-        fechahora_llegada: req.body.fechahora_llegada,
-        duracion: req.body.duracion,
-        aerolinea: req.body.aerolinea,
-        cantidad_asientos: req.body.cantidad_asientos
-    }
-    //mas validaciones acá
-
-    Object.keys(req.body.sanitizedInput).forEach((key)=>{
-        if(req.body.sanitizedInput[key] === undefined) {
-            delete req.body.sanitizedInput[key]
-        }   
-    })
-    next()
-}
+import { Destiny } from "../destiny/destiny.entity.js";
 
 async function findAll (req:Request, res:Response) {
-    const flights = await repository.findAll()
-    res.json({data:flights})
+    try {
+        const em = orm.em.fork();
+        const flights = await em.find(Flight, {})
+        res.json({data:flights})
+    } catch (error) {
+        res.status(500).json({message: 'Error al obtener vuelos', error})
+    }
 }
 
 async function findOne(req: Request, res: Response) {
-    const id = req.params.id
-    const flight = await repository.findOne({ id })
-    if (!flight){
-    return res.status(404).send({message:'No encontrado'})
-    }
-    res.json({data:flight})
-}
-
-function add(req: Request, res: Response)  {
-    const input = req.body.sanitizedInput
-    const flightInput = new Flight(
-        input.fechahora_salida, 
-        input.fechahora_llegada, 
-        input.duracion, 
-        input.aerolinea,
-        input.cantidad_asientos
-    )
-    const flight = repository.add(flightInput)
-    res.status(201).send({message: 'vuelo creado', data: flight})
-}
-
-function update(req: Request,res: Response) {
-    req.body.sanitizedInput.id = req.params.id
-    const flight = repository.update(req.body.sanitizedInput)
-    
-    if(!Flight){
-    res.status(404).send({message: 'vuelo no encontrado'})
-    }
-    else {
-        res.status(200).send({message: 'vuelo actualizado', data: flight})
+    try {
+        const em = orm.em.fork();
+        const id = Number(req.params.id)
+        const flight = await em.findOne(Flight, { id })
+        if (!flight){
+            return res.status(404).send({message:'No encontrado'})
+        }
+        res.json({data:flight})
+    } catch (error) {
+        res.status(500).json({message: 'Error al obtener vuelo', error})
     }
 }
 
-function remove(req: Request, res: Response){
-    const id = req.params.id
-    const flight = repository.delete({id})
-
-    if(!Flight){
-        res.status(404).send({message: 'vuelo no encontrado'})
-    } else{
-        res.status(200).send({message: 'vuelo borrado'})
+async function add(req: Request, res: Response) {
+    try {
+        const em = orm.em.fork();
+        
+        console.log('Datos recibidos:', req.body.sanitizedInput);
+        
+        const { destino_id, ...flightData } = req.body.sanitizedInput;
+        
+        // Validar que destino_id esté presente
+        if (!destino_id) {
+            return res.status(400).json({
+                message: 'Error al crear vuelo',
+                error: 'destino_id es requerido'
+            });
+        }
+        
+        // Verificar que el destino existe
+        const destino = await em.findOne(Destiny, destino_id);
+        if (!destino) {
+            return res.status(400).json({
+                message: 'Error al crear vuelo',
+                error: `Destino con ID ${destino_id} no encontrado`
+            });
+        }
+        
+        console.log('Destino encontrado:', destino);
+        
+        // Crear el vuelo
+        const flight = em.create(Flight, {
+            ...flightData,
+            destino: destino 
+        });
+        
+        await em.flush();
+        
+        console.log('Vuelo creado:', flight);
+        
+        res.status(201).json({
+            message: 'Vuelo creado exitosamente',
+            data: {
+                id: flight.id,
+                fechahora_salida: flight.fechahora_salida,
+                fechahora_llegada: flight.fechahora_llegada,
+                duracion: flight.duracion,
+                aerolinea: flight.aerolinea,
+                cantidad_asientos: flight.cantidad_asientos,
+                montoVuelo: flight.montoVuelo,
+                origen: flight.origen,
+                destino: {
+                    id: destino.id,
+                    nombre: destino.nombre // asumiendo que Destiny tiene nombre
+                },
+                createdAt: flight.createdAt,
+                updatedAt: flight.updatedAt
+            }
+        });
+        
+    } catch (error) {
+        console.error('Error detallado:', error);
     }
 }
 
-export {sanitizeFlightInput, findAll, findOne, add, update, remove}
+/*async function add(req: Request, res: Response)  {
+    try {
+        const em = orm.em.fork();
+        const {destino_id, ...flightData} = req.body.sanitizedInput;
+        const destino = await em.findOne(Destiny, destino_id);
+        if (!destino) {
+            return res.status(400).json({
+                message: 'Error al crear vuelo',
+                error: `Destino con ID ${destino_id} no encontrado`
+            });
+        }
+        const flight = em.create(Flight, {
+            ...flightData,
+            destino: destino 
+        });
+        await em.flush();
+        res.status(201).send({message: 'vuelo creado', data: flight})
+    } catch (error) {
+        res.status(500).json({message: 'Error al crear vuelo', error})
+    }
+}*/
+
+async function update(req: Request,res: Response) {
+    try {
+        const em = orm.em.fork();
+        const id = Number.parseInt(req.params.id)
+        const flight = await em.findOne(Flight, { id })
+        if (!flight) {
+            return res.status(404).send({ message: 'vuelo no encontrado' })
+        }
+        em.assign(flight, req.body.sanitizedInput)
+        await em.flush()
+        res.status(200).send({ message: 'vuelo actualizado', data: flight })
+    } catch (error) {
+        res.status(500).json({ message: 'Error al actualizar vuelo', error })
+    }
+}
+
+async function remove(req: Request, res: Response){
+    try {
+        const em = orm.em.fork();
+        const id = Number.parseInt(req.params.id)
+        const flight = await em.findOne(Flight, { id })
+        if (!flight) {
+            return res.status(404).send({ message: 'vuelo no encontrado' })
+        }
+        await em.removeAndFlush(flight)
+        res.status(200).send({ message: 'vuelo borrado', data: flight })
+    } catch (error) {
+        res.status(500).json({ message: 'Error al borrar vuelo', error })
+    }
+}
+
+
+export { findAll, findOne, add, update, remove, }

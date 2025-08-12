@@ -9,15 +9,16 @@ POST http://localhost:3000/api/users
 Content-Type: application/json
 
 {
-    "nombre":  "Kevin", 
-    "apellido": "Dolver", 
-    "email": "kevindovler888@gmail.com", 
-    "contraseña": "kd05052005",
-    "telefono": "54341509973"
+    "nombre":  "Mateo", 
+    "apellido": "Medon", 
+    "email": "mateemedon@gmail.com", 
+    "contraseña": "mm02022002",
+    "telefono": "2473464989"
 }
 
+
 ### modificar recurso completo e idempotente
-PUT http://localhost:3000/api/users/c29d9d3c-bb78-4a6e-8e98-455346734db2 
+PUT http://localhost:3000/api/users/1 
 Content-Type: application/json
 
 {
@@ -29,7 +30,7 @@ Content-Type: application/json
 }
 
 ### modificar recurso parcial
-PATCH http://localhost:3000/api/users/c29d9d3c-bb78-4a6e-8e98-455346734db2
+PATCH http://localhost:3000/api/users/1
 Content-Type: application/json
 
 {
@@ -38,4 +39,4 @@ Content-Type: application/json
 }
 
 ###borrar recurso
-DELETE http://localhost:3000/api/users/c29d9d3c-bb78-4a6e-8e98-455346734db2
+DELETE http://localhost:3000/api/users/3

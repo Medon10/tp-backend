@@ -1,10 +1,23 @@
-import crypto from 'node:crypto'
+import { Entity, Property, OneToMany, Collection, Cascade } from '@mikro-orm/core';
+import { BaseEntity } from '../shared/bdd/BaseEntity.js';
+import { Flight } from '../flight/flight.entity.js';
+import { Trip } from '../trip/trip.entity.js';
 
-export class Destiny {
-    constructor(
-        public nombre:string, 
-        public transporte:string[],
-        public actividades?:string[],  
-        public id?: number
-    ) {} 
+@Entity({ tableName: 'destinies' })
+export class Destiny extends BaseEntity {
+
+    @Property( { nullable: false, unique: false })
+    nombre!: string;
+
+    @Property({ type: 'json', nullable: true })
+    transporte!: string[];
+
+    @Property({ type: 'json', nullable: true })
+    actividades?: string[];
+
+    @OneToMany(() => Flight, flight => flight.destino, { cascade: [Cascade.PERSIST, Cascade.REMOVE] })
+    flights = new Collection<Flight>(this);
+
+    @OneToMany('Trip', 'destino', { cascade: [Cascade.PERSIST, Cascade.REMOVE] })
+    trips = new Collection<Trip>(this);
 }

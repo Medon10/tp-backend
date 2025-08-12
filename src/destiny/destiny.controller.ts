@@ -1,72 +1,72 @@
 import {Request, Response, NextFunction} from "express"
-import { DestinyRepository } from "./destiny.repository.js"
+import { orm } from "../shared/bdd/orm.js"
 import { Destiny } from "./destiny.entity.js"
 
-const repository = new DestinyRepository()
-
-function sanitizeUserInput(req: Request, res: Response, next: NextFunction) {
-    req.body.sanitizedInput = {
-        nombre: req.body.nombre,
-        transporte: req.body.transporte,
-        actividades: req.body.actividades
-
-    }
-    //mas validaciones acá
-
-    Object.keys(req.body.sanitizedInput).forEach((key)=>{
-        if(req.body.sanitizedInput[key] === undefined) {
-            delete req.body.sanitizedInput[key]
-        }   
-    })
-    next()
-}
 
 async function findAll (req:Request, res:Response) {
-    const destiny = await repository.findAll()
-    res.json({data:destiny})
+    try {
+        const em = orm.em.fork();
+        const destiny = await em.find(Destiny, {})
+        res.json({data:destiny})
+    } catch (error) {
+        res.status(500).json({message: 'Error al obtener destinos', error})
+    }
 }
 
 async function findOne(req: Request, res: Response) {
-    const id = req.params.id
-    const destiny = await repository.findOne({ id })
-    if (!destiny){
-    return res.status(404).send({message:'No encontrado'})
+    try {
+        const em = orm.em.fork();
+        const id = Number.parseInt(req.params.id)
+        const destiny = await em.findOne(Destiny, { id })
+        if (!destiny){
+            return res.status(404).send({message:'No encontrado'})
+        }
+        res.status(200).json({message: 'Destino encontrado', data: destiny})
+    } catch (error) {
+        res.status(500).json({message: 'Error al obtener destino', error})
     }
-    res.json({data:destiny})
 }
 
-function add(req: Request, res: Response)  {
-    const input = req.body.sanitizedInput
-    const destinyInput = new Destiny(
-        input.nombre, 
-        input.transporte,
-        input.actividades
-    )
-    const destiny = repository.add(destinyInput)
-    res.status(201).send({message: 'destino creado', data: destiny})
+async function add(req: Request, res: Response)  {
+    try {
+        const em = orm.em.fork();
+        const destiny = em.create(Destiny, req.body.sanitizedInput)
+        await em.flush()
+        res.status(201).send({message: 'destino creado', data: destiny})
+    } catch (error) {
+        res.status(500).send({message: 'Error al crear destino', error})
+    }
 }
 
-function update(req: Request,res: Response) {
-    req.body.sanitizedInput.id = req.params.id
-    const destiny = repository.update(req.body.sanitizedInput)
-
-    if(!destiny){
-    res.status(404).send({message: 'destino no encontrado'})
-    }
-    else {
+async function update(req: Request,res: Response) {
+    try {
+        const em = orm.em.fork();
+        const id = Number.parseInt(req.params.id)
+        const destiny = await em.findOne(Destiny, { id })
+        if(!destiny){
+            return res.status(404).send({message: 'destino no encontrado'})
+        }
+        em.assign(destiny, req.body.sanitizedInput)
+        await em.flush()
         res.status(200).send({message: 'destino actualizado', data: destiny})
+    } catch (error) {
+        res.status(500).send({message: 'Error al actualizar destino', error})
     }
 }
 
-function remove(req: Request, res: Response){
-    const id = req.params.id
-    const destiny = repository.delete({id})
-
-    if(!destiny){
-        res.status(404).send({message: 'destino no encontrado'})
-    } else{
-        res.status(200).send({message: 'destino borrado'})
+async function remove(req: Request, res: Response){
+    try {
+        const em = orm.em.fork();
+        const id = Number.parseInt(req.params.id)
+        const destiny = await em.findOne(Destiny, { id })
+        if(!destiny){
+            return res.status(404).send({message: 'destino no encontrado'})
+        }
+        await em.removeAndFlush(destiny)
+        res.status(200).send({message: 'destino borrado', data: destiny})
+    } catch (error) {
+        res.status(500).send({message: 'Error al borrar destino', error})
     }
 }
 
-export {sanitizeUserInput, findAll, findOne, add, update, remove}
+export { findAll, findOne, add, update, remove}
