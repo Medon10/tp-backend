@@ -1,7 +1,10 @@
-import {Request, Response, NextFunction} from "express"
-import { orm } from '../shared/bdd/orm.js'
-import { User } from "./user.entity.js"
+import {Request, Response, NextFunction} from "express";
+import { orm } from '../shared/bdd/orm.js';
+import { User } from "./user.entity.js";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 
+const JWT_SECRET = process.env.JWT_SECRET || "secret123"
 
 async function findAll (req:Request, res:Response) {
     try {
@@ -22,6 +25,58 @@ async function findOne(req: Request, res: Response) {
     } catch (error: any) {
         res.status(500).json({message: 'Error al obtener usuario', error})
     }
+}
+
+async function signup(req: Request, res: Response) {
+  try {
+    const em = orm.em.fork();
+    const { email, password } = req.body.sanitizedInput;
+
+    const existing = await em.findOne(User, { email });
+    if (existing) {
+      return res.status(400).json({ message: "El usuario ya existe" });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = em.create(User, { ...req.body.sanitizedInput, password: hashedPassword });
+    await em.flush();
+
+    res.status(201).json({ message: "Usuario registrado", data: user });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+}
+
+async function login(req: Request, res: Response) {
+  try {
+    const em = orm.em.fork();
+    const { email, contraseña } = req.body.sanitizedInput;
+
+    const user = await em.findOne(User, { email });
+    if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
+
+    const isValid = await bcrypt.compare(contraseña, user.contraseña);
+    if (!isValid) return res.status(401).json({ message: "Contraseña incorrecta" });
+
+    const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: "1h" });
+
+    res.status(200).json({ message: "Login exitoso", token, user });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+}
+
+async function getProfile(req: Request, res: Response) {
+  try {
+    const em = orm.em.fork();
+    const userId = (req as any).user.id; // el middleware mete el user en req
+    const user = await em.findOne(User, { id: userId });
+    if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
+
+    res.status(200).json({ message: "Usuario autenticado", data: user });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
 }
 
 async function add(req:Request, res: Response) {
@@ -66,6 +121,4 @@ async function remove(req:Request, res: Response) {
     }
 }
 
-//falta validar contraseña
-
-export { findAll, findOne, add, update, remove}
+export { findAll, findOne, add, update, remove, login, getProfile, signup }

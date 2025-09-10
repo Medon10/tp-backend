@@ -9,14 +9,14 @@ POST http://localhost:3000/api/flights
 Content-Type: application/json
 
 {
-    "fechahora_salida":  "2026-02-14 9:00", 
-    "fechahora_llegada": "2026-02-14 16:00", 
-    "duracion": 7, 
-    "aerolinea": "Despegar",
-    "cantidad_asientos": 270,
-    "montoVuelo": 1000,
-    "origen": "Barcelona",
-    "destino_id": 2
+    "fechahora_salida":  "2019-12-24 17:00", 
+    "fechahora_llegada": "2019-12-24 19:00", 
+    "duracion": 2, 
+    "aerolinea": "Flybondi",
+    "cantidad_asientos": 200,
+    "montoVuelo": 500,
+    "origen": "Nuketown",
+    "destino_id": 5
 }
 
 ### modificar recurso completo e idempotente

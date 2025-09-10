@@ -9,9 +9,9 @@ POST http://localhost:3000/api/destinies
 Content-Type: application/json
 
 {
-    "nombre":  "Tierra del Fuego", 
-    "transporte": ["Auto"],
-    "actividades": ["Nieve", "Sky"]
+    "nombre":  "Kino Der Toten", 
+    "transporte": ["Colectivo", "Bicicleta"],
+    "actividades": ["Juegos", "Armas"]
 }
 
 ### modificar recurso completo e idempotente

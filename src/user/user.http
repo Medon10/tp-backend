@@ -9,11 +9,11 @@ POST http://localhost:3000/api/users
 Content-Type: application/json
 
 {
-    "nombre":  "Mateo", 
-    "apellido": "Medon", 
-    "email": "mateemedon@gmail.com", 
-    "contraseña": "mm02022002",
-    "telefono": "2473464989"
+    "nombre":  "Chupa", 
+    "apellido": "Ballesteros", 
+    "email": "Balle@gmail.com", 
+    "contraseña": "gcb20050109",
+    "telefono": "2473505099"
 }
 
 
@@ -30,12 +30,11 @@ Content-Type: application/json
 }
 
 ### modificar recurso parcial
-PATCH http://localhost:3000/api/users/1
+PATCH http://localhost:3000/api/users/5
 Content-Type: application/json
 
 {
-    "email":  "juanbinomio@gmail.com", 
-    "contraseña": "jb01011001"
+    "nombre":  "Gerardo"
 }
 
 ###borrar recurso
