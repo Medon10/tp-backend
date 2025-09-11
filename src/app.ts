@@ -4,7 +4,7 @@ import { orm, syncSchema } from './shared/bdd/orm.js'
 import { RequestContext } from '@mikro-orm/core'
 import { flightRouter } from './flight/flight.routes.js'
 import { userRouter } from './user/user.routes.js'
-import { tripRouter } from './trip/trip.routes.js'
+import { reservationRouter } from './reservation/reservation.routes.js'
 import { destinyRouter } from './destiny/destiny.routes.js'
 
 const app = express()
@@ -20,7 +20,7 @@ app.use((req, res, next) => {
 //API routes
 app.use('/api/flights', flightRouter)
 app.use('/api/users', userRouter) 
-app.use('/api/trips', tripRouter)
+app.use('/api/reservations', reservationRouter)
 app.use('/api/destiny', destinyRouter)
 
 

@@ -1,7 +1,7 @@
 import { Entity, Property, ManyToOne, OneToMany, Collection } from '@mikro-orm/core';
 import { BaseEntity } from '../shared/bdd/BaseEntity.js';
 import { Destiny } from '../destiny/destiny.entity.js';
-import { Trip } from '../trip/trip.entity.js';
+import { Reservation } from '../reservation/reservation.entity.js';
 
 @Entity({ tableName: 'flights' })
 export class Flight extends BaseEntity {
@@ -29,6 +29,6 @@ export class Flight extends BaseEntity {
     @ManyToOne(() => Destiny)
     destino!: Destiny;
 
-    @OneToMany(() => Trip, trip => trip.flight)
-    trips = new Collection<Trip>(this);
+    @OneToMany(() => Reservation, reservation => reservation.flight)
+    reservations = new Collection<Reservation>(this);
 }
