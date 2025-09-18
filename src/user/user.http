@@ -5,15 +5,15 @@ GET http://localhost:3000/api/users
 GET http://localhost:3000/api/users/1
 
 ### create
-POST http://localhost:3000/api/users 
+POST http://localhost:3000/api/users/signup
 Content-Type: application/json
 
 {
-    "nombre":  "Chupa", 
-    "apellido": "Ballesteros", 
-    "email": "Balle@gmail.com", 
-    "contraseña": "gcb20050109",
-    "telefono": "2473505099"
+    "nombre":  "Zuku", 
+    "apellido": "Easy", 
+    "email": "zukueasy@gmail.com", 
+    "password": "123333",
+    "telefono": "2473522088"
 }
 
 

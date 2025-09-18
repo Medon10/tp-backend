@@ -1,7 +1,6 @@
 import { Entity, Property, ManyToOne, Rel } from '@mikro-orm/core';
 import { BaseEntity } from '../shared/bdd/BaseEntity.js';
 import { User } from '../user/user.entity.js';
-import { Destiny } from '../destiny/destiny.entity.js'; 
 import type { Flight } from '../flight/flight.entity.js';
 
 @Entity({ tableName: 'reservations' })
