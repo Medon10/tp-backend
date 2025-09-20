@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { findAll, findOne, add, update, remove, login, getProfile } from "./user.controller.js";
+import { findAll, findOne, signup, update, remove, login, getProfile } from "./user.controller.js";
 import { sanitizeUserInput } from "../shared/middleware/sanitizeUsers.js";
 import {sanitizeLoginInput} from "../shared/middleware/sanitizeLogin.js"
 import { verifyToken } from "../shared/middleware/verifytoken.js";
@@ -23,7 +23,7 @@ userRouter.get("/test", (req, res) => {
 });
 // Rutas públicas
 userRouter.post("/login", sanitizeLoginInput, login); // login de usuario
-userRouter.post("/signup", sanitizeUserInput, add); // registrar usuario
+userRouter.post("/signup", sanitizeUserInput, signup); // registrar usuario
 
 // Rutas privadas
 userRouter.get("/", verifyToken, findAll);

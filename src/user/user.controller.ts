@@ -30,20 +30,28 @@ async function findOne(req: Request, res: Response) {
 async function signup(req: Request, res: Response) {
   try {
     const em = orm.em.fork();
-    const { email, password } = req.body.sanitizedInput;
+    const { email, password, nombre, apellido } = req.body.sanitizedInput;
 
+    // Verificar si el usuario ya existe
     const existing = await em.findOne(User, { email });
     if (existing) {
-      return res.status(400).json({ message: "El usuario ya existe" });
+      return res.status(409).json({ message: "Este email ya está registrado" });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const user = em.create(User, { ...req.body.sanitizedInput, password: hashedPassword });
+    // Crear usuario (la contraseña ya viene hasheada del middleware)
+    const user = em.create(User, req.body.sanitizedInput);
     await em.flush();
 
-    res.status(201).json({ message: "Usuario registrado", data: user });
+    // Devolver usuario sin la contraseña
+    const { password: _, ...userWithoutPassword } = user;
+    
+    res.status(201).json({ 
+      message: "Usuario registrado exitosamente", 
+      user: userWithoutPassword 
+    });
   } catch (error: any) {
-    res.status(500).json({ message: error.message });
+    console.error("Signup error:", error);
+    res.status(500).json({ message: "Error interno del servidor" });
   }
 }
 
