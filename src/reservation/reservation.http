@@ -1,0 +1,39 @@
+### get all
+GET http://localhost:3000/api/reservations
+
+### get one
+GET http://localhost:3000/api/reservations/3
+
+### create
+POST http://localhost:3000/api/reservations
+Content-Type: application/json
+
+{
+    "fecha_reserva": "2021-03-02",
+    "valor_reserva": 450,
+    "estado": "completado",
+    "usuario_id": 1,
+    "flight_id": 2
+}
+
+### modificar recurso completo e idempotente
+PUT http://localhost:3000/api/reservations/1
+Content-Type: application/json
+
+{
+    "fecha_salida": "2026-10-01 13:00",
+    "fecha_llegada": "2026-10-01 19:00",
+    "estado": "completado",
+    "usuario_id": 1,
+}
+
+### modificar recurso parcial
+PATCH http://localhost:3000/api/reservations/1
+Content-Type: application/json
+
+{
+    "usuario_id": 2
+}
+
+###borrar recurso
+DELETE http://localhost:3000/api/reservations/1

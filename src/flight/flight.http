@@ -1,0 +1,44 @@
+### get all
+GET http://localhost:3000/api/flights
+
+### get one
+GET http://localhost:3000/api/flights/1
+
+### create
+POST http://localhost:3000/api/flights 
+Content-Type: application/json
+
+{
+    "fechahora_salida":  "2019-12-24 17:00", 
+    "fechahora_llegada": "2019-12-24 19:00", 
+    "duracion": 2, 
+    "aerolinea": "Flybondi",
+    "cantidad_asientos": 200,
+    "montoVuelo": 500,
+    "origen": "Nuketown",
+    "destino_id": 5
+}
+
+### modificar recurso completo e idempotente
+PUT http://localhost:3000/api/flights/1  
+Content-Type: application/json
+
+{
+    "fechahora_salida":  "4 de junio 2026 12:00", 
+    "fechahora_llegada": "4 de junio 2026 20:00", 
+    "duracion": 8, 
+    "aerolinea": "flybondi",
+    "cantidad_asientos": 130
+}
+
+### modificar recurso parcial
+PATCH http://localhost:3000/api/flights/1
+Content-Type: application/json
+
+{
+    "duracion":  "5", 
+    "cantidad_asientos": "80"
+}
+
+###borrar recurso
+DELETE http://localhost:3000/api/flights/1

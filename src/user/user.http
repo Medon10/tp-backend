@@ -1,0 +1,41 @@
+### get all
+GET http://localhost:3000/api/users
+
+### get one
+GET http://localhost:3000/api/users/1
+
+### create
+POST http://localhost:3000/api/users/signup
+Content-Type: application/json
+
+{
+    "nombre":  "Zuku", 
+    "apellido": "Easy", 
+    "email": "zukueasy@gmail.com", 
+    "password": "123333",
+    "telefono": "2473522088"
+}
+
+
+### modificar recurso completo e idempotente
+PUT http://localhost:3000/api/users/1 
+Content-Type: application/json
+
+{
+    "nombre":  "Juampi", 
+    "apellido": "Binomio", 
+    "email": "jb999@gmail.com", 
+    "contraseña": "jb02022002",
+    "telefono": "5434150654"
+}
+
+### modificar recurso parcial
+PATCH http://localhost:3000/api/users/5
+Content-Type: application/json
+
+{
+    "nombre":  "Gerardo"
+}
+
+###borrar recurso
+DELETE http://localhost:3000/api/users/3

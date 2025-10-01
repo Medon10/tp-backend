@@ -1,0 +1,1 @@
+export const dbpassword = "1234";

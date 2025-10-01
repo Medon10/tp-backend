@@ -1,0 +1,36 @@
+### get all
+GET http://localhost:3000/api/destinies
+
+### get one
+GET http://localhost:3000/api/destinies/1
+
+### create
+POST http://localhost:3000/api/destinies
+Content-Type: application/json
+
+{
+    "nombre":  "Kino Der Toten", 
+    "transporte": ["Colectivo", "Bicicleta"],
+    "actividades": ["Juegos", "Armas"]
+}
+
+### modificar recurso completo e idempotente
+PUT http://localhost:3000/api/destinies/1
+Content-Type: application/json
+
+{
+    "nombre":  "Venecia", 
+    "transporte": ["Bote"], 
+    "actividades": ["Comida", "Paseo"]
+}
+
+### modificar recurso parcial
+PATCH http://localhost:3000/api/destinies/1
+Content-Type: application/json
+
+{
+    "transporte":  ["Bote" , "Kayak"] 
+}
+
+###borrar recurso
+DELETE http://localhost:3000/api/destinies/2
