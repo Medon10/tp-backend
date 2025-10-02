@@ -24,6 +24,6 @@ export const syncSchema = async () => {
     const generator = orm.getSchemaGenerator();
     /*await generator.createSchema();
     await generator.dropSchema();*/
-    await generator.updateSchema();
+    //await generator.updateSchema({safe: true});
     console.log('Esquema actualizado');
 }

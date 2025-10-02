@@ -1,7 +1,7 @@
 import {Request, Response, NextFunction} from "express"
 import { orm } from "../shared/bdd/orm.js"
 import { Destiny } from "./destiny.entity.js"
-
+import { uploadDestinyImage } from '../shared/middleware/uploadImage.js';
 
 async function findAll (req:Request, res:Response) {
     try {
@@ -69,4 +69,31 @@ async function remove(req: Request, res: Response){
     }
 }
 
-export { findAll, findOne, add, update, remove}
+async function uploadImage(req: Request, res: Response) {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No se recibió ninguna imagen' });
+    }
+
+    const em = orm.em.fork();
+    const id = Number.parseInt(req.params.id);
+    const destiny = await em.findOne(Destiny, { id });
+
+    if (!destiny) {
+      return res.status(404).json({ message: 'Destino no encontrado' });
+    }
+
+    // Guardar la URL relativa
+    destiny.imagen = `/uploads/destinos/${req.file.filename}`;
+    await em.flush();
+
+    res.status(200).json({ 
+      message: 'Imagen actualizada', 
+      data: destiny 
+    });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+}
+
+export { findAll, findOne, add, update, remove, uploadImage }

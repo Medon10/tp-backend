@@ -8,6 +8,9 @@ export class Destiny extends BaseEntity {
     @Property( { nullable: false, unique: false })
     nombre!: string;
 
+    @Property({ nullable: true })
+    imagen?: string;
+
     @Property({ type: 'json', nullable: true })
     transporte!: string[];
 
