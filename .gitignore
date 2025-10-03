@@ -4,9 +4,8 @@ coverage
 # API keys and secrets
 .env
 
-# Node modules
-node_modules/
-node_modules/**/*
+# dependency directory
+node_modules
 
 # OS metadata
 .DS_Store
@@ -31,9 +30,3 @@ dist/**/*
 
 #contraseña bdd
 ormpassword.ts
-
-# testing
-/coverage
-
-# production
-/build
