@@ -6,10 +6,10 @@ import { Reservation } from '../reservation/reservation.entity.js';
 @Entity({ tableName: 'flights' })
 export class Flight extends BaseEntity {
     @Property()
-    fechahora_salida!: string; // ISO
+    fechahora_salida!: Date; // ISO
 
     @Property()
-    fechahora_llegada!: string;
+    fechahora_llegada!: Date;
 
     @Property()
     duracion!: number;

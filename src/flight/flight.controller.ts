@@ -27,6 +27,39 @@ async function findOne(req: Request, res: Response) {
     }
 }
 
+async function findByDestino(req: Request, res: Response) {
+  try {
+    const em = orm.em.fork();
+    const destinoId = Number.parseInt(req.params.destinoId);
+    
+    if (!destinoId) {
+      return res.status(400).json({ message: 'ID de destino inválido' });
+    }
+
+    // Buscar vuelos futuros para ese destino
+    const flights = await em.find(
+      Flight,
+      {
+        destino: destinoId,
+        fechahora_salida: { $gte: new Date() }
+      },
+      {
+        populate: ['destino'],
+        orderBy: { fechahora_salida: 'ASC' }
+      }
+    );
+
+    res.status(200).json({
+      message: 'Vuelos encontrados',
+      cantidad: flights.length,
+      data: flights
+    });
+  } catch (error: any) {
+    console.error('Error al buscar vuelos por destino:', error);
+    res.status(500).json({ message: error.message });
+  }
+}
+
 async function add(req: Request, res: Response) {
     try {
         const em = orm.em.fork();
@@ -89,27 +122,6 @@ async function add(req: Request, res: Response) {
     }
 }
 
-/*async function add(req: Request, res: Response)  {
-    try {
-        const em = orm.em.fork();
-        const {destino_id, ...flightData} = req.body.sanitizedInput;
-        const destino = await em.findOne(Destiny, destino_id);
-        if (!destino) {
-            return res.status(400).json({
-                message: 'Error al crear vuelo',
-                error: `Destino con ID ${destino_id} no encontrado`
-            });
-        }
-        const flight = em.create(Flight, {
-            ...flightData,
-            destino: destino 
-        });
-        await em.flush();
-        res.status(201).send({message: 'vuelo creado', data: flight})
-    } catch (error) {
-        res.status(500).json({message: 'Error al crear vuelo', error})
-    }
-}*/
 
 async function update(req: Request,res: Response) {
     try {
@@ -143,4 +155,4 @@ async function remove(req: Request, res: Response){
 }
 
 
-export { findAll, findOne, add, update, remove, }
+export { findAll, findOne, add, update, remove, findByDestino }
