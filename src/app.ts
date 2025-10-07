@@ -1,4 +1,5 @@
 import 'reflect-metadata'
+import 'dotenv/config'
 import express from 'express'
 import cookieParser from 'cookie-parser'
 import { orm, syncSchema } from './shared/bdd/orm.js'
@@ -7,6 +8,7 @@ import { flightRouter } from './flight/flight.routes.js'
 import { userRouter } from './user/user.routes.js'
 import { reservationRouter } from './reservation/reservation.routes.js'
 import { destinyRouter } from './destiny/destiny.routes.js'
+import { favoriteRouter } from './favorite/favorite.routes.js'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { existsSync } from 'fs'
@@ -81,6 +83,7 @@ app.use('/api/flights', flightRouter)
 app.use('/api/users', userRouter)
 app.use('/api/reservations', reservationRouter)
 app.use('/api/destinies', destinyRouter)
+app.use('/api/favorites', favoriteRouter)
 
 // Middleware 404 - AL FINAL
 app.use((req, res) => {

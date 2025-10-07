@@ -1,6 +1,7 @@
-import { Entity, Property, OneToMany, Cascade } from '@mikro-orm/core';
+import { Entity, Property, OneToMany, Cascade, Collection } from '@mikro-orm/core';
 import { BaseEntity } from '../shared/bdd/BaseEntity.js';
 import { Reservation } from '../reservation/reservation.entity.js';
+import { Favorite } from '../favorite/favorite.entity.js';
 
 @Entity({tableName: 'users'})
 export class User extends BaseEntity {
@@ -20,5 +21,8 @@ export class User extends BaseEntity {
     telefono!: string;
 
     @OneToMany(() => Reservation, reservation => reservation.usuario, {cascade: [Cascade.PERSIST, Cascade.REMOVE]})
-    reservations = new Array<Reservation>();
+    reservations = new Collection<Reservation>(this);
+
+    @OneToMany(() => Favorite, favorite => favorite.user)
+    favorites = new Collection<Favorite>(this);
 }

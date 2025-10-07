@@ -144,4 +144,9 @@ async function remove(req:Request, res: Response) {
     }
 }
 
-export { findAll, findOne, add, update, remove, login, getProfile, signup }
+async function logout(req: Request, res: Response) {
+  res.clearCookie('token');
+  res.status(200).json({ message: "Logout exitoso" });
+}
+
+export { findAll, findOne, add, update, remove, login, getProfile, signup, logout }
