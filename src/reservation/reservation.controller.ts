@@ -36,7 +36,7 @@ async function add(req: Request, res: Response) {
         console.log('Body original:', req.body);
         console.log('Sanitized input:', req.body.sanitizedInput);
         
-        // Extraer IDs de relaciones del input sanitizado (ya no necesitamos destino_id)
+        // Extraer IDs de relaciones del input sanitizado 
         const { 
             flight_id, 
             usuario_id, 
@@ -59,13 +59,11 @@ async function add(req: Request, res: Response) {
             });
         }
 
-        // Verificar que existan las entidades relacionadas (flight con destino incluido)
-        console.log('Verificando existencia de entidades relacionadas...');
-        
+        // Cargar entidades relacionadas en paralelo  
         const [flight, usuario] = await Promise.all([
             // Cargar el flight con su destino relacionado
             em.findOne('Flight', flight_id, { 
-                populate: ['destino'] // Asumiendo que en Flight tienes una relación 'destino'
+                populate: ['destino'] 
             }),
             em.findOne(User, usuario_id)
         ]);
@@ -170,6 +168,47 @@ async function add(req: Request, res: Response) {
     }
 }
 
+async function findUserReservations(req: Request, res: Response) {
+  try {
+    const em = orm.em.fork();
+    const userId = (req as any).user.id;
+
+    const reservations = await em.find(
+      Reservation,
+      { usuario: userId },
+      { 
+        populate: ['flight', 'flight.destino', 'usuario'],
+        orderBy: { fecha_reserva: 'DESC' }
+      }
+    );
+
+
+    // Clasificar reservas por estado y fecha
+    const now = new Date();
+    const classified = reservations.map(reservation => {
+      const fechaVuelo = new Date((reservation.flight as any).fechahora_salida);
+      const isPast = fechaVuelo < now;
+      
+      return {
+        ...reservation,
+        isPast,
+        canCancel: !isPast && reservation.estado !== 'cancelado' && reservation.estado !== 'completado'
+      };
+    });
+
+    res.status(200).json({
+      message: 'Reservas encontradas',
+      cantidad: classified.length,
+      data: classified
+    });
+  } catch (error: any) {
+    console.error('Error al obtener reservas:', error);
+    res.status(500).json({ message: error.message });
+  }
+}
+
+
+
 async function update(req: Request,res: Response) {
     try {
         const em = orm.em.fork();
@@ -201,4 +240,50 @@ async function remove(req: Request, res: Response){
     }
 }
 
-export { findAll, findOne, add, update, remove }
+// Cancelar una reserva
+async function cancelReservation(req: Request, res: Response) {
+  try {
+    const em = orm.em.fork();
+    const userId = (req as any).user.id;
+    const reservationId = Number(req.params.id);
+
+    const reservation = await em.findOne(
+      Reservation,
+      { id: reservationId, usuario: userId },
+      { populate: ['flight'] }
+    );
+
+    if (!reservation) {
+      return res.status(404).json({ message: 'Reserva no encontrada' });
+    }
+
+    // Verificar que la reserva se pueda cancelar
+    if (reservation.estado === 'cancelado') {
+      return res.status(400).json({ message: 'La reserva ya está cancelada' });
+    }
+
+    if (reservation.estado === 'completado') {
+      return res.status(400).json({ message: 'No se puede cancelar un viaje completado' });
+    }
+
+    // Verificar que el vuelo no haya pasado
+    const fechaVuelo = new Date((reservation.flight as any).fechahora_salida);
+    if (fechaVuelo < new Date()) {
+      return res.status(400).json({ message: 'No se puede cancelar un viaje que ya pasó' });
+    }
+
+    reservation.estado = 'cancelado';
+    reservation.updatedAt = new Date();
+    await em.flush();
+
+    res.status(200).json({ 
+      message: 'Reserva cancelada exitosamente',
+      data: reservation
+    });
+  } catch (error: any) {
+    console.error('Error al cancelar reserva:', error);
+    res.status(500).json({ message: error.message });
+  }
+}
+
+export { findAll, findOne, add, update, remove, findUserReservations, cancelReservation }
