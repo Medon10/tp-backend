@@ -70,7 +70,11 @@ async function login(req: Request, res: Response) {
     const isValid = await bcrypt.compare(password, user.password);
     if (!isValid) return res.status(401).json({ message: "Contraseña incorrecta" });
 
-    const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: "1h" });
+    const token = jwt.sign(
+      { id: user.id, email: user.email, rol: user.rol }, 
+      JWT_SECRET, 
+      { expiresIn: "1h" }
+    );
 
     // Configurar cookie con el token
     res.cookie('token', token, {

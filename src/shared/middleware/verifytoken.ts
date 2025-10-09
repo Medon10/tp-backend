@@ -10,7 +10,7 @@ declare global {
   }
 }
 
-
+const TOKEN_SECRET = process.env.TOKEN_SECRET;
 
 export function verifyToken(req: Request, res: Response, next: NextFunction): void {
   const token = req.cookies.token;
