@@ -9,7 +9,11 @@ export async function sanitizeFlightInput(req: Request, res: Response, next: Nex
         cantidad_asientos: req.body.cantidad_asientos,
         montoVuelo: req.body.montoVuelo,
         origen: req.body.origen,
-        destino_id: req.body.destino_id
+        destino_id: req.body.destino_id,
+        distancia_km: req.body.distancia_km,
+        capacidad_restante: req.body.capacidad_restante,
+        personas: Number(req.body.personas) || 1, // Valor por defecto de 1 persona
+        presupuesto: req.body.presupuesto
     }
 
     Object.keys(req.body.sanitizedInput).forEach((key)=>{
