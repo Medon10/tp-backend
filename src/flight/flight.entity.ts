@@ -18,14 +18,20 @@ export class Flight extends BaseEntity {
     @Property()
     aerolinea!: string;
 
-    @Property()
+    @Property({ nullable: false })
     cantidad_asientos!: number;
+
+    @Property({ nullable: false })
+    capacidad_restante!: number;
     
     @Property({ fieldName: 'montoVuelo'})
     montoVuelo!: number;
 
     @Property()
     origen!: string;
+
+    @Property({ nullable: true })
+    distancia_km?: number;
 
     @ManyToOne(() => Destiny)
     destino!: Destiny;
