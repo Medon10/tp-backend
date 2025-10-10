@@ -1,17 +1,18 @@
 import { Router } from "express";
-import { findAll, findOne, add, update, remove, findByDestino } from "./flight.controller.js";
+import { findAll, findOne, add, update, remove, findByDestino, buscarVuelos } from "./flight.controller.js"; // Asegúrate que 'buscarVuelos' esté aquí
 import { sanitizeFlightInput } from "../shared/middleware/sanitizeFlight.js";
-import { verifyToken } from "../shared/middleware/verifytoken.js"; // <- Importa verifyToken
-import { verifyAdmin } from "../shared/middleware/verifyAdmin.js"; // <- Importa tu nuevo middleware
+import { verifyToken } from "../shared/middleware/verifytoken.js";
+import { verifyAdmin } from "../shared/middleware/verifyAdmin.js";
 
 export const flightRouter = Router();
 
-// Rutas públicas (todos pueden ver vuelos)
+// Rutas públicas
 flightRouter.get('/', findAll);
 flightRouter.get('/:id', findOne);
 flightRouter.get('/destino/:destinoId', findByDestino);
+flightRouter.post('/search', buscarVuelos); 
 
-// Rutas protegidas (solo para administradores)
+// Rutas de Admin
 flightRouter.post('/', verifyToken, verifyAdmin, sanitizeFlightInput, add);
 flightRouter.put('/:id', verifyToken, verifyAdmin, sanitizeFlightInput, update);
 flightRouter.patch('/:id', verifyToken, verifyAdmin, sanitizeFlightInput, update);

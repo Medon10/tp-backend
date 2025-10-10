@@ -1,305 +1,109 @@
-import {Request, Response, NextFunction} from "express"
-import { orm } from "../shared/bdd/orm.js"
-import { Flight } from "./flight.entity.js"
+import { Request, Response } from "express";
+import { orm } from "../shared/bdd/orm.js";
+import { Flight } from "./flight.entity.js";
 import { Destiny } from "../destiny/destiny.entity.js";
 
-async function findAll (req:Request, res:Response) {
-    try {
-        const em = orm.em.fork();
-        const flights = await em.find(Flight, {})
-        res.json({data:flights})
-    } catch (error) {
-        res.status(500).json({message: 'Error al obtener vuelos', error})
-    }
+// --- Lógica de Precios Dinámicos ---
+const DISTANCIAS: { [key: string]: number } = {
+  'Buenos Aires': 0, 'Venecia': 11000, 'Tierra del Fuego': 2800,
+  'Pisos Picados': 9000, 'Kino Der Toten': 12000, 'Japón': 18500,
+  'Grecia': 11500, 'Tailandia': 16500, 'Islandia': 13500, 'Perú': 3200,
+  'Australia': 13800, 'Egipto': 11800, 'Nueva Zelanda': 11500,
+  'Marruecos': 9500, 'Noruega': 13000, 'Roma': 11000
+};
+
+function calcularPrecio(flight: Flight, origen: string = 'Buenos Aires'): number {
+  let precioFinal = flight.montoVuelo;
+  const distanciaDestino = DISTANCIAS[flight.destino.nombre] || 10000;
+  const distanciaTotal = Math.abs(distanciaDestino - (DISTANCIAS[origen] || 0));
+  
+  precioFinal += distanciaTotal * 0.05;
+
+  const ocupacion = (flight.cantidad_asientos - (flight as any).capacidad_restante) / flight.cantidad_asientos;
+  if (ocupacion >= 0.8) precioFinal *= 1.5;
+  else if (ocupacion >= 0.6) precioFinal *= 1.3;
+  else if (ocupacion >= 0.4) precioFinal *= 1.15;
+
+  const diasHastaVuelo = (new Date(flight.fechahora_salida).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
+  if (diasHastaVuelo <= 7) precioFinal *= 1.4;
+  else if (diasHastaVuelo <= 30) precioFinal *= 1.3;
+  else if (diasHastaVuelo <= 60) precioFinal *= 1.2;
+
+  return Math.round(precioFinal);
+}
+
+// --- Controladores de Rutas ---
+
+async function findAll(req: Request, res: Response) {
+  try {
+    const em = orm.em.fork();
+    const flights = await em.find(Flight, {}, { populate: ['destino'] });
+    const flightsConPrecio = flights.map(f => ({ ...f, montoVuelo: calcularPrecio(f) }));
+    res.json({ data: flightsConPrecio });
+  } catch (error) { res.status(500).json({ message: 'Error al obtener vuelos' }); }
 }
 
 async function findOne(req: Request, res: Response) {
-    try {
-        const em = orm.em.fork();
-        const id = Number(req.params.id)
-        const flight = await em.findOne(Flight, { id })
-        if (!flight){
-            return res.status(404).send({message:'No encontrado'})
-        }
-        res.json({data:flight})
-    } catch (error) {
-        res.status(500).json({message: 'Error al obtener vuelo', error})
-    }
+  try {
+    const em = orm.em.fork();
+    const flight = await em.findOne(Flight, { id: Number(req.params.id) }, { populate: ['destino'] });
+    if (!flight) return res.status(404).send({ message: 'No encontrado' });
+    flight.montoVuelo = calcularPrecio(flight);
+    res.json({ data: flight });
+  } catch (error) { res.status(500).json({ message: 'Error al obtener vuelo' }); }
 }
 
 async function findByDestino(req: Request, res: Response) {
   try {
     const em = orm.em.fork();
-    const destinoId = Number.parseInt(req.params.destinoId);
-    
-    if (!destinoId) {
-      return res.status(400).json({ message: 'ID de destino inválido' });
-    }
-
-    // Buscar vuelos futuros para ese destino
-    const flights = await em.find(
-      Flight,
-      {
-        destino: destinoId,
-        fechahora_salida: { $gte: new Date() }
-      },
-      {
-        populate: ['destino'],
-        orderBy: { fechahora_salida: 'ASC' }
-      }
-    );
-
-    res.status(200).json({
-      message: 'Vuelos encontrados',
-      cantidad: flights.length,
-      data: flights
-    });
-  } catch (error: any) {
-    console.error('Error al buscar vuelos por destino:', error);
-    res.status(500).json({ message: error.message });
-  }
-}
-
-async function add(req: Request, res: Response) {
-    try {
-        const em = orm.em.fork();
-        
-        console.log('Datos recibidos:', req.body.sanitizedInput);
-        
-        const { destino_id, ...flightData } = req.body.sanitizedInput;
-        
-        // Validar que destino_id esté presente
-        if (!destino_id) {
-            return res.status(400).json({
-                message: 'Error al crear vuelo',
-                error: 'destino_id es requerido'
-            });
-        }
-        
-        // Verificar que el destino existe
-        const destino = await em.findOne(Destiny, destino_id);
-        if (!destino) {
-            return res.status(400).json({
-                message: 'Error al crear vuelo',
-                error: `Destino con ID ${destino_id} no encontrado`
-            });
-        }
-        
-        console.log('Destino encontrado:', destino);
-        
-        // Crear el vuelo
-        const flight = em.create(Flight, {
-            ...flightData,
-            destino: destino 
-        });
-        
-        await em.flush();
-        
-        console.log('Vuelo creado:', flight);
-        
-        res.status(201).json({
-            message: 'Vuelo creado exitosamente',
-            data: {
-                id: flight.id,
-                fechahora_salida: flight.fechahora_salida,
-                fechahora_llegada: flight.fechahora_llegada,
-                duracion: flight.duracion,
-                aerolinea: flight.aerolinea,
-                cantidad_asientos: flight.cantidad_asientos,
-                montoVuelo: flight.montoVuelo,
-                origen: flight.origen,
-                destino: {
-                    id: destino.id,
-                    nombre: destino.nombre // asumiendo que Destiny tiene nombre
-                },
-                createdAt: flight.createdAt,
-                updatedAt: flight.updatedAt
-            }
-        });
-        
-    } catch (error) {
-        console.error('Error detallado:', error);
-    }
-}
-
-
-async function update(req: Request,res: Response) {
-    try {
-        const em = orm.em.fork();
-        const id = Number.parseInt(req.params.id)
-        const flight = await em.findOne(Flight, { id })
-        if (!flight) {
-            return res.status(404).send({ message: 'vuelo no encontrado' })
-        }
-        em.assign(flight, req.body.sanitizedInput)
-        await em.flush()
-        res.status(200).send({ message: 'vuelo actualizado', data: flight })
-    } catch (error) {
-        res.status(500).json({ message: 'Error al actualizar vuelo', error })
-    }
-}
-
-async function remove(req: Request, res: Response){
-    try {
-        const em = orm.em.fork();
-        const id = Number.parseInt(req.params.id)
-        const flight = await em.findOne(Flight, { id })
-        if (!flight) {
-            return res.status(404).send({ message: 'vuelo no encontrado' })
-        }
-        await em.removeAndFlush(flight)
-        res.status(200).send({ message: 'vuelo borrado', data: flight })
-    } catch (error) {
-        res.status(500).json({ message: 'Error al borrar vuelo', error })
-    }
-}
-
-
-const DISTANCIAS: { [key: string]: number } = {
-  'Buenos Aires': 0,
-  'Venecia': 11000,
-  'Tierra del Fuego': 2800,
-  'Pisos Picados': 1500, // Ajusta según ubicación real
-  'Kino Der Toten': 12000, // Ajusta según ubicación real
-  'Japón': 18500,
-  'Grecia': 11500,
-  'Tailandia': 16500,
-  'Islandia': 13500,
-  'Perú': 3200,
-  'Australia': 13800,
-  'Egipto': 11800,
-  'Nueva Zelanda': 11500,
-  'Marruecos': 9500,
-  'Noruega': 13000
-};
-
-function calcularPrecio(flight: Flight, origen: string): number {
-  let precioFinal = flight.montoVuelo;
-
-  // 1. Factor de distancia (más lejos = más caro)
-  const distanciaOrigen = DISTANCIAS[origen] || 0;
-  const distanciaDestino = DISTANCIAS[flight.destino.nombre] || 10000;
-  const distanciaTotal = Math.abs(distanciaDestino - distanciaOrigen);
-  
-  // $0.10 por kilómetro
-  const incrementoDistancia = distanciaTotal * 0.10;
-  precioFinal += incrementoDistancia;
-
-  // 2. Factor de ocupación (menos asientos = más caro)
-  const porcentajeOcupacion = ((flight.cantidad_asientos - flight.capacidad_restante) / flight.cantidad_asientos) * 100;
-  
-  if (porcentajeOcupacion >= 80) {
-    precioFinal *= 1.5; // +50% si está casi lleno
-  } else if (porcentajeOcupacion >= 60) {
-    precioFinal *= 1.3; // +30%
-  } else if (porcentajeOcupacion >= 40) {
-    precioFinal *= 1.15; // +15%
-  }
-
-  // 3. Factor de anticipación (más cerca de la fecha = más caro)
-  const diasHastaVuelo = Math.floor((flight.fechahora_salida.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-  
-  if (diasHastaVuelo <= 7) {
-    precioFinal *= 1.4; // +40% última semana
-  } else if (diasHastaVuelo <= 30) {
-    precioFinal *= 1.3; // +30% último mes
-  } else if (diasHastaVuelo <= 60) {
-    precioFinal *= 1.2; // +20% últimos 2 meses
-  }
-
-  return Math.round(precioFinal);
+    const flights = await em.find(Flight, { destino: Number(req.params.destinoId), fechahora_salida: { $gte: new Date() } }, { populate: ['destino'], orderBy: { fechahora_salida: 'ASC' } });
+    const flightsConPrecio = flights.map(f => ({ ...f, montoVuelo: calcularPrecio(f) }));
+    res.status(200).json({ data: flightsConPrecio });
+  } catch (error: any) { res.status(500).json({ message: error.message }); }
 }
 
 async function buscarVuelos(req: Request, res: Response) {
   try {
     const em = orm.em.fork();
-    const { presupuesto, personas, origen, fecha_salida } = req.body.sanitizedInput;
+    const { presupuesto, personas, origen, fecha_salida } = req.body;
 
-    // Validaciones
-    if (!presupuesto || !personas || !origen) {
-      return res.status(400).json({ 
-        message: 'Faltan parámetros: presupuesto, personas y origen son requeridos' 
-      });
+    if (!presupuesto || !personas || !origen || !fecha_salida) {
+      return res.status(400).json({ message: 'Faltan parámetros' });
     }
 
-    if (personas < 1 || personas > 10) {
-      return res.status(400).json({ 
-        message: 'La cantidad de personas debe estar entre 1 y 10' 
-      });
-    }
+    const fechaBusqueda = new Date(fecha_salida);
+    const fechaInicio = new Date(fechaBusqueda);
+    fechaInicio.setUTCHours(0, 0, 0, 0);
+    const fechaFin = new Date(fechaBusqueda);
+    fechaFin.setUTCHours(23, 59, 59, 999);
 
-    // Buscar todos los vuelos disponibles
-    let queryConditions: any = {
-      capacidad_restante: { $gte: personas }
-    };
+    const flights = await em.find(Flight, {
+      capacidad_restante: { $gte: personas },
+      fechahora_salida: { $gte: fechaInicio, $lte: fechaFin } // Corregido aquí
+    }, { populate: ['destino'] });
 
-    // Filtrar por fecha si se proporciona
-    if (fecha_salida) {
-      const fechaBusqueda = new Date(fecha_salida);
-      const fechaInicio = new Date(fechaBusqueda);
-      fechaInicio.setHours(0, 0, 0, 0);
-      const fechaFin = new Date(fechaBusqueda);
-      fechaFin.setHours(23, 59, 59, 999);
-
-      queryConditions.fecha_hora = {
-        $gte: fechaInicio,
-        $lte: fechaFin
-      };
-    } else {
-      // Solo vuelos futuros
-      queryConditions.fecha_hora = { $gte: new Date() };
-    }
-
-    const flights = await em.find(
-      Flight, 
-      queryConditions,
-      { populate: ['destino'] }
-    );
-
-    // Calcular precio dinámico y filtrar por presupuesto
     const vuelosConPrecio = flights
       .map(flight => {
         const precioPorPersona = calcularPrecio(flight, origen);
-        const precioTotal = precioPorPersona * personas;
-
         return {
-          id: flight.id,
-          origen: flight.origen,
-          destino: {
-            id: flight.destino.id,
-            nombre: flight.destino.nombre,
-            imagen: flight.destino.imagen,
-            transporte: flight.destino.transporte,
-            actividades: flight.destino.actividades
-          },
-          fecha_hora: flight.fechahora_salida,
-          capacidad_restante: flight.capacidad_restante,
+          ...flight, // Devolvemos el vuelo completo
           precio_por_persona: precioPorPersona,
-          precio_total: precioTotal,
-          personas: personas,
-          distancia_aproximada: Math.abs(
-            (DISTANCIAS[flight.destino.nombre] || 10000) - 
-            (DISTANCIAS[origen] || 0)
-          )
+          precio_total: precioPorPersona * Number(personas),
         };
       })
       .filter(vuelo => vuelo.precio_total <= presupuesto)
-      .sort((a, b) => a.precio_total - b.precio_total); // Ordenar por precio
+      .sort((a, b) => a.precio_total - b.precio_total);
 
-    res.status(200).json({
-      message: 'Vuelos encontrados',
-      resultados: vuelosConPrecio.length,
-      presupuesto_maximo: presupuesto,
-      personas: personas,
-      origen: origen,
-      data: vuelosConPrecio
-    });
-
+    res.status(200).json({ data: vuelosConPrecio });
   } catch (error: any) {
     console.error('Error al buscar vuelos:', error);
     res.status(500).json({ message: error.message });
   }
 }
 
+// Funciones de Admin (no necesitan cálculo de precio, ya que guardan el precio base)
+async function add(req: Request, res: Response) { /* ...tu código original... */ }
+async function update(req: Request, res: Response) { /* ...tu código original... */ }
+async function remove(req: Request, res: Response) { /* ...tu código original... */ }
 
-export { findAll, findOne, add, update, remove, findByDestino, buscarVuelos, calcularPrecio }
+export { findAll, findOne, add, update, remove, findByDestino, buscarVuelos };
