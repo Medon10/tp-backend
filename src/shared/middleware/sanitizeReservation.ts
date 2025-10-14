@@ -6,8 +6,8 @@ export async function sanitizeReservationInput(req: Request, res: Response, next
         valor_reserva: req.body.valor_reserva,
         estado: req.body.estado,
         usuario_id: req.body.usuario_id,
-        flight_id: req.body.flight_id
-
+        flight_id: req.body.flight_id,
+        personas: req.body.personas,
     }
 
     Object.keys(req.body.sanitizedInput).forEach((key)=>{

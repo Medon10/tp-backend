@@ -3,16 +3,14 @@ import { orm } from "../shared/bdd/orm.js"
 import { Flight } from "./flight.entity.js"
 import { Destiny } from "../destiny/destiny.entity.js";
 
-async function findAll (req:Request, res:Response) {
-    try {
-        const em = orm.em.fork();
-        const flights = await em.find(Flight, {})
-        res.json({data:flights})
-    } catch (error) {
-        res.status(500).json({message: 'Error al obtener vuelos', error})
-    }
+async function findAll(req: Request, res: Response) {
+  try {
+    const em = orm.em.fork();
+    const flights = await em.find(Flight, {}, { populate: ['destino'] });
+    const flightsConPrecio = flights.map(f => ({ ...f, montoVuelo: calcularPrecio(f) }));
+    res.json({ data: flightsConPrecio });
+  } catch (error) { res.status(500).json({ message: 'Error al obtener vuelos' }); }
 }
-
 async function findOne(req: Request, res: Response) {
     try {
         const em = orm.em.fork();
@@ -90,8 +88,10 @@ async function add(req: Request, res: Response) {
         // Crear el vuelo
         const flight = em.create(Flight, {
             ...flightData,
-            destino: destino 
+            destino: destino,
+            capacidad_restante: flightData.cantidad_asientos 
         });
+        
         
         await em.flush();
         
@@ -173,37 +173,22 @@ const DISTANCIAS: { [key: string]: number } = {
   'Noruega': 13000
 };
 
-function calcularPrecio(flight: Flight, origen: string): number {
+function calcularPrecio(flight: Flight, origen: string = 'Buenos Aires'): number {
   let precioFinal = flight.montoVuelo;
-
-  // 1. Factor de distancia - usar distancia_km de la base de datos
-  if (flight.distancia_km) {
-    const incrementoDistancia = flight.distancia_km * 0.10; // $0.10 por km
-    precioFinal += incrementoDistancia;
-  }
-
-  // 2. Factor de ocupación
-  const porcentajeOcupacion = ((flight.cantidad_asientos - (flight.capacidad_restante || flight.cantidad_asientos)) / flight.cantidad_asientos) * 100;
+  const distanciaDestino = DISTANCIAS[flight.destino.nombre] || 10000;
+  const distanciaTotal = Math.abs(distanciaDestino - (DISTANCIAS[origen] || 0));
   
-  if (porcentajeOcupacion >= 80) {
-    precioFinal *= 1.5;
-  } else if (porcentajeOcupacion >= 60) {
-    precioFinal *= 1.3;
-  } else if (porcentajeOcupacion >= 40) {
-    precioFinal *= 1.15;
-  }
+  precioFinal += distanciaTotal * 0.05; // Ajustado a $0.05 por km
 
-  // 3. Factor de anticipación - ARREGLAR: convertir string a Date
-  const fechaVuelo = new Date(flight.fechahora_salida);
-  const diasHastaVuelo = Math.floor((fechaVuelo.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-  
-  if (diasHastaVuelo <= 7) {
-    precioFinal *= 1.4;
-  } else if (diasHastaVuelo <= 30) {
-    precioFinal *= 1.3;
-  } else if (diasHastaVuelo <= 60) {
-    precioFinal *= 1.2;
-  }
+  const ocupacion = (flight.cantidad_asientos - (flight as any).capacidad_restante) / flight.cantidad_asientos;
+  if (ocupacion >= 0.8) precioFinal *= 1.5;
+  else if (ocupacion >= 0.6) precioFinal *= 1.3;
+  else if (ocupacion >= 0.4) precioFinal *= 1.15;
+
+  const diasHastaVuelo = (new Date(flight.fechahora_salida).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
+  if (diasHastaVuelo <= 7) precioFinal *= 1.4;
+  else if (diasHastaVuelo <= 30) precioFinal *= 1.3;
+  else if (diasHastaVuelo <= 60) precioFinal *= 1.2;
 
   return Math.round(precioFinal);
 }

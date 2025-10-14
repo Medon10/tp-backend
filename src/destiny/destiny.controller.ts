@@ -30,14 +30,27 @@ async function findOne(req: Request, res: Response) {
 async function add(req: Request, res: Response)  {
     try {
         const em = orm.em.fork();
-        const destiny = em.create(Destiny, req.body.sanitizedInput)
-        await em.flush()
-        res.status(201).send({message: 'destino creado', data: destiny})
-    } catch (error) {
-        res.status(500).send({message: 'Error al crear destino', error})
+        const input = req.body.sanitizedInput;
+
+        if (!input.nombre || input.nombre.trim() === '') {
+            return res.status(400).json({ message: 'El nombre del destino es obligatorio.' });
+        }
+
+        const destinoExistente = await em.findOne(Destiny, { nombre: input.nombre });
+        if (destinoExistente) {
+            return res.status(409).json({ message: 'Ya existe un destino con este nombre.' });
+        }
+
+        const nuevoDestino = em.create(Destiny, input);
+        await em.flush();
+
+        res.status(201).json({ message: 'Destino creado exitosamente', data: nuevoDestino });
+
+    } catch (error: any) {
+        console.error('Error al crear destino:', error);
+        res.status(500).json({ message: 'Error interno del servidor al crear el destino.', error: error.message });
     }
 }
-
 async function update(req: Request,res: Response) {
     try {
         const em = orm.em.fork();

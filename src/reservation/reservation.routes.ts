@@ -11,7 +11,7 @@ reservationRouter.patch('/:id/cancel', verifyToken, cancelReservation);
 
 reservationRouter.get('/', verifyToken, findAll);
 reservationRouter.get('/:id', verifyToken, findOne);
-reservationRouter.post('/', verifyToken, sanitizeReservationInput, add);
+reservationRouter.post('/', verifyToken, add);
 reservationRouter.put('/:id', verifyToken, sanitizeReservationInput, update);
 reservationRouter.patch('/:id', verifyToken, sanitizeReservationInput, update);
 reservationRouter.delete('/:id', verifyToken, remove);
