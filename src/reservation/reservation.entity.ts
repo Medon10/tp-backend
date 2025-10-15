@@ -13,7 +13,7 @@ export class Reservation extends BaseEntity {
     valor_reserva!: number;
 
     @Property()
-    estado!: 'pendiente' | 'confirmado' | 'cancelado' | 'completado';
+    estado!: 'confirmado' | 'cancelado' | 'completado';
 
     @ManyToOne(() => User)
     usuario!: User;
