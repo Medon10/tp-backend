@@ -3,6 +3,7 @@ import { orm } from '../shared/bdd/orm.js';
 import { User } from "./user.entity.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { Reservation } from "../reservation/reservation.entity.js";
 
 const JWT_SECRET = process.env.TOKEN_SECRET || "secret123"
 
@@ -79,9 +80,9 @@ async function login(req: Request, res: Response) {
     // Configurar cookie con el token
     res.cookie('token', token, {
       httpOnly: true,
-      secure: false, // true solo en HTTPS
+      secure: false, 
       sameSite: 'lax',
-      maxAge: 3600000 // 1 hora en milisegundos
+      maxAge: 3600000 // 1 hora 
     });
     const { password: _, ...userWithoutPassword } = user;
     
@@ -153,4 +154,140 @@ async function logout(req: Request, res: Response) {
   res.status(200).json({ message: "Logout exitoso" });
 }
 
-export { findAll, findOne, add, update, remove, login, getProfile, signup, logout }
+async function getUserStats(req: Request, res: Response) {
+  try {
+    const em = orm.em.fork();
+    const userId = (req as any).user.id;
+
+    console.log(' Buscando estadísticas para usuario:', userId);
+
+    // Obtener usuario
+    const user = await em.findOne(User, { id: userId });
+    
+    if (!user) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+
+    // Contar viajes completados
+    const viajesCompletados = await em.count(Reservation, {
+      usuario: userId, // usar la propiedad 'usuario' que existe en la entidad Reservation
+      estado: 'completado' 
+    });
+
+    console.log(' Viajes completados:', viajesCompletados);
+
+    // Obtener próximo viaje (estado CONFIRMADO, ordenado por fecha de vuelo)
+    const proximoViaje = await em.findOne(
+      Reservation,
+      {
+        usuario: userId, // usar la propiedad 'usuario' que existe en la entidad Reservation
+        estado: 'confirmado' 
+      },
+      {
+        populate: ['flight', 'flight.destino'],
+        orderBy: { createdAt: 'DESC' } 
+      }
+    );
+
+    console.log(' Próximo viaje encontrado:', proximoViaje ? 'Sí' : 'No');
+
+    // Calcular años como miembro
+    const fechaRegistro = user.createdAt;
+    const ahora = new Date();
+
+    let years = ahora.getFullYear() - fechaRegistro.getFullYear();
+    let months = ahora.getMonth() - fechaRegistro.getMonth();
+    let days = ahora.getDate() - fechaRegistro.getDate();
+
+    if (days < 0) {
+      const daysInPrevMonth = new Date(ahora.getFullYear(), ahora.getMonth(), 0).getDate();
+      days += daysInPrevMonth;
+      months -= 1;
+    }
+
+    if (months < 0) {
+      months += 12;
+      years -= 1;
+    }
+
+    // Texto legible
+    let tiempoComoMiembro = '';
+    if (years > 0) {
+      tiempoComoMiembro = `${years} ${years === 1 ? 'año' : 'años'}`;
+      if (months > 0) {
+        tiempoComoMiembro += ` y ${months} ${months === 1 ? 'mes' : 'meses'}`;
+      }
+    } else if (months > 0) {
+      tiempoComoMiembro = `${months} ${months === 1 ? 'mes' : 'meses'}`;
+      if (days > 0) {
+        tiempoComoMiembro += ` y ${days} ${days === 1 ? 'día' : 'días'}`;
+      }
+    } else {
+      tiempoComoMiembro = `${days} ${days === 1 ? 'día' : 'días'}`;
+    }
+
+    const responseData = {
+      viajesCompletados,
+      proximoViaje: proximoViaje ? {
+        id: proximoViaje.id,
+        destino: proximoViaje.flight?.destino?.nombre || 'Destino desconocido',
+        fecha_vuelo: proximoViaje.flight?.fechahora_salida || new Date().toISOString(),
+        precio_total: proximoViaje.valor_reserva || 0 
+      } : null,
+      miembroDesde: fechaRegistro.toISOString(),
+      aniosComoMiembro: tiempoComoMiembro,
+      // Para backward compatibility
+      aniosNumerico: years || 0
+    };
+
+    console.log('Respuesta:', responseData);
+
+    res.status(200).json({
+      message: 'Estadísticas del usuario',
+      data: responseData
+    });
+
+  } catch (error: any) {
+    console.error(' Error al obtener estadísticas:', error);
+    console.error('Stack:', error.stack);
+    res.status(500).json({ message: error.message });
+  }
+}
+
+// Actualizar nombre y apellido
+async function updateProfile(req: Request, res: Response) {
+  try {
+    const em = orm.em.fork();
+    const userId = (req as any).user.id;
+    const { nombre, apellido } = req.body.sanitizedInput;
+
+    const user = await em.findOne(User, { id: userId });
+    
+    if (!user) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+
+    // Solo actualizar nombre y apellido
+    if (nombre) user.nombre = nombre;
+    if (apellido) user.apellido = apellido;
+    user.updatedAt = new Date();
+
+    await em.flush();
+
+    res.status(200).json({
+      message: 'Perfil actualizado correctamente',
+      data: {
+        id: user.id,
+        nombre: user.nombre,
+        apellido: user.apellido,
+        email: user.email
+      }
+    });
+
+  } catch (error: any) {
+    console.error('Error al actualizar perfil:', error);
+    res.status(500).json({ message: error.message });
+  }
+}
+
+export { findAll, findOne, add, update, remove, login, getProfile, signup, logout, getUserStats, updateProfile };

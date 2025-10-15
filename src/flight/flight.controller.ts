@@ -2,6 +2,7 @@ import {Request, Response, NextFunction} from "express"
 import { orm } from "../shared/bdd/orm.js"
 import { Flight } from "./flight.entity.js"
 import { Destiny } from "../destiny/destiny.entity.js";
+import { calcularPrecio } from "../shared/utils/precio.js";
 
 async function findAll(req: Request, res: Response) {
   try {
@@ -47,10 +48,35 @@ async function findByDestino(req: Request, res: Response) {
       }
     );
 
+        const vuelosConPrecio = flights.map(flight => {
+          const origen = flight.origen || 'Buenos Aires';
+          const { precioPorPersona } = calcularPrecio(flight, origen, 1);
+
+          return {
+            id: flight.id,
+            origen: flight.origen,
+            destino: {
+              id: flight.destino.id,
+              nombre: flight.destino.nombre,
+              imagen: flight.destino.imagen,
+              transporte: flight.destino.transporte || [],
+              actividades: flight.destino.actividades || []
+            },
+            fechahora_salida: flight.fechahora_salida,
+            fechahora_llegada: flight.fechahora_llegada,
+            duracion: flight.duracion,
+            capacidad_restante: flight.capacidad_restante,
+            precio_por_persona: precioPorPersona, // Precio dinámico
+            distancia_aproximada: flight.distancia_km || 0,  
+            cantidad_asientos: flight.cantidad_asientos,
+            aerolinea: flight.aerolinea
+      };
+    });
+
     res.status(200).json({
       message: 'Vuelos encontrados',
       cantidad: flights.length,
-      data: flights
+      data: vuelosConPrecio
     });
   } catch (error: any) {
     console.error('Error al buscar vuelos por destino:', error);
@@ -173,22 +199,37 @@ const DISTANCIAS: { [key: string]: number } = {
   'Noruega': 13000
 };
 
-function calcularPrecio(flight: Flight, origen: string = 'Buenos Aires'): number {
+function calcularPrecio(flight: Flight, origen: string): number {
   let precioFinal = flight.montoVuelo;
-  const distanciaDestino = DISTANCIAS[flight.destino.nombre] || 10000;
-  const distanciaTotal = Math.abs(distanciaDestino - (DISTANCIAS[origen] || 0));
+
+  // 1. Factor de distancia - usar distancia_km de la base de datos
+  if (flight.distancia_km) {
+    const incrementoDistancia = flight.distancia_km * 0.10; // $0.10 por km
+    precioFinal += incrementoDistancia;
+  }
+
+  // 2. Factor de ocupación
+  const porcentajeOcupacion = ((flight.cantidad_asientos - (flight.capacidad_restante || flight.cantidad_asientos)) / flight.cantidad_asientos) * 100;
   
-  precioFinal += distanciaTotal * 0.05; // Ajustado a $0.05 por km
+  if (porcentajeOcupacion >= 80) {
+    precioFinal *= 1.5;
+  } else if (porcentajeOcupacion >= 60) {
+    precioFinal *= 1.3;
+  } else if (porcentajeOcupacion >= 40) {
+    precioFinal *= 1.15;
+  }
 
-  const ocupacion = (flight.cantidad_asientos - (flight as any).capacidad_restante) / flight.cantidad_asientos;
-  if (ocupacion >= 0.8) precioFinal *= 1.5;
-  else if (ocupacion >= 0.6) precioFinal *= 1.3;
-  else if (ocupacion >= 0.4) precioFinal *= 1.15;
-
-  const diasHastaVuelo = (new Date(flight.fechahora_salida).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
-  if (diasHastaVuelo <= 7) precioFinal *= 1.4;
-  else if (diasHastaVuelo <= 30) precioFinal *= 1.3;
-  else if (diasHastaVuelo <= 60) precioFinal *= 1.2;
+  // 3. Factor de anticipación - ARREGLAR: convertir string a Date
+  const fechaVuelo = new Date(flight.fechahora_salida);
+  const diasHastaVuelo = Math.floor((fechaVuelo.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+  
+  if (diasHastaVuelo <= 7) {
+    precioFinal *= 1.4;
+  } else if (diasHastaVuelo <= 30) {
+    precioFinal *= 1.3;
+  } else if (diasHastaVuelo <= 60) {
+    precioFinal *= 1.2;
+  }
 
   return Math.round(precioFinal);
 }
@@ -213,7 +254,7 @@ async function buscarVuelos(req: Request, res: Response) {
     }
 
     let queryConditions: any = {
-      cantidad_asientos: { $gte: personas } // Cambiar a cantidad_asientos si no tienes capacidad_restante
+      cantidad_asientos: { $gte: personas } 
     };
 
     if (fecha_salida) {
@@ -243,8 +284,7 @@ async function buscarVuelos(req: Request, res: Response) {
 
     const vuelosConPrecio = flights
       .map(flight => {
-        const precioPorPersona = calcularPrecio(flight, origen);
-        const precioTotal = precioPorPersona * personas;
+        const {precioPorPersona, precioTotal} = calcularPrecio(flight, origen, personas);
 
         return {
           id: flight.id,

@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { findAll, findOne, signup, update, remove, login, getProfile, logout } from "./user.controller.js";
+import { findAll, findOne, signup, update, remove, login, getProfile, logout, getUserStats, updateProfile } from "./user.controller.js";
 import { sanitizeUserInput } from "../shared/middleware/sanitizeUsers.js";
 import {sanitizeLoginInput} from "../shared/middleware/sanitizeLogin.js"
 import { verifyToken } from "../shared/middleware/verifytoken.js";
@@ -30,6 +30,8 @@ userRouter.post("/logout", logout); // logout de usuario
 userRouter.get("/", verifyToken, findAll);
 userRouter.get("/:id", verifyToken, findOne);
 userRouter.get("/profile/me", verifyToken, getProfile); // devuelve el perfil del usuario autenticado
+userRouter.get('/profile/stats', verifyToken, getUserStats);
+userRouter.put('/profile/update', verifyToken, sanitizeUserInput, updateProfile);
 
 userRouter.put("/:id", verifyToken, sanitizeUserInput, update);
 userRouter.patch("/:id", verifyToken, sanitizeUserInput, update);
