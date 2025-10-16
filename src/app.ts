@@ -43,7 +43,7 @@ app.use('/api/favorites', favoriteRouter);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const publicPath = path.join(__dirname, '..', 'public');
-app.use('/uploads', express.static(publicPath));
+app.use('/uploads', express.static(path.join(publicPath, 'uploads')));
 
 
 app.use((req, res) => {

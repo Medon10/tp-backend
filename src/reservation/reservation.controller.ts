@@ -4,6 +4,31 @@ import { Reservation } from "./reservation.entity.js"
 import { User } from "../user/user.entity.js";
 import { Flight } from "../flight/flight.entity.js"; 
 import { LockMode } from "@mikro-orm/core"; 
+import { DISTANCIAS } from "../shared/utils/precio.js";
+
+function calcularPrecio(flight: Flight, origen: string): number {
+  let precioFinal = flight.montoVuelo ?? 500;
+  const distanciaDestino = DISTANCIAS[flight.destino.nombre] || 10000;
+  const distanciaTotal = Math.abs(distanciaDestino - (DISTANCIAS[origen] || 0));
+  precioFinal += distanciaTotal * 0.05;
+
+  const cantidadAsientos = Number(flight.cantidad_asientos) || 0;
+  const capacidadRestante = Number(flight.capacidad_restante) || 0;
+
+  if (cantidadAsientos > 0) {
+      const ocupacion = (cantidadAsientos - capacidadRestante) / cantidadAsientos;
+      if (ocupacion >= 0.8) precioFinal *= 1.5;
+      else if (ocupacion >= 0.6) precioFinal *= 1.3;
+      else if (ocupacion >= 0.4) precioFinal *= 1.15;
+  }
+
+  const diasHastaVuelo = (new Date(flight.fechahora_salida).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
+  if (diasHastaVuelo <= 7) precioFinal *= 1.4;
+  else if (diasHastaVuelo <= 30) precioFinal *= 1.3;
+  else if (diasHastaVuelo <= 60) precioFinal *= 1.2;
+
+  return Math.round(precioFinal);
+}
 
 async function findAll (req:Request, res:Response) {
     try {
@@ -41,7 +66,7 @@ async function add(req: Request, res: Response) {
                 throw new Error('Faltan datos: se requiere ID del vuelo y cantidad de personas.');
             }
 
-            const flight = await em.findOne(Flight, { id: flight_id }, { lockMode: LockMode.PESSIMISTIC_WRITE });
+            const flight = await em.findOne(Flight, { id: flight_id }, { populate: ['destino'], lockMode: LockMode.PESSIMISTIC_WRITE });
 
             if (!flight) {
                 res.status(404);
@@ -55,15 +80,19 @@ async function add(req: Request, res: Response) {
 
             flight.capacidad_restante -= personas;
 
-            const now = new Date();
+            const precioPorPersona = calcularPrecio(flight, flight.origen);
+            const valorTotalReserva = precioPorPersona * personas;
+
+            const now = new Date(); // Se define la fecha actual
             const nuevaReserva = em.create(Reservation, {
                 fecha_reserva: now.toISOString().split('T')[0],
-                valor_reserva: flight.montoVuelo * personas,
+                valor_reserva: valorTotalReserva,
                 estado: 'confirmado',
+                personas: personas,
                 usuario: em.getReference(User, usuario_id),
                 flight: flight,
-                createdAt: now,
-                updatedAt: now
+                createdAt: now, // Se añade la fecha de creación
+                updatedAt: now  // Se añade la fecha de actualización
             });
             em.persist(nuevaReserva);
         });
@@ -82,7 +111,6 @@ async function findUserReservations(req: Request, res: Response) {
     const em = orm.em.fork();
     const userId = (req as any).user.id;
 
- // 1. La consulta ahora carga todas las relaciones anidadas que necesitamos.
     const reservations = await em.find(
       Reservation,
       { usuario: userId },
@@ -92,55 +120,43 @@ async function findUserReservations(req: Request, res: Response) {
       }
     );
 
-    // 2. Mapeamos manualmente los datos para crear un objeto limpio y seguro para el frontend.
     const now = new Date();
     const responseData = reservations.map(reservation => {
-      // Casteamos para poder acceder a las propiedades cargadas
       const flight = reservation.flight as any;
+      if (!flight || !flight.destino) return null;
 
-      // Si por alguna razón una reserva no tiene vuelo o destino, la ignoramos para evitar errores.
-      if (!flight || !flight.destino) {
-        return null;
-      }
+      // Se recalcula el precio dinámico cada vez que se consulta.
+      const precioPorPersona = calcularPrecio(flight, flight.origen);
+      const valorTotalActualizado = precioPorPersona * (reservation.personas || 1);
 
       const fechaVuelo = new Date(flight.fechahora_salida);
-      const isPast = fechaVuelo < now;
       
-      // Creamos el objeto con la estructura exacta que el frontend espera.
       return {
         id: reservation.id,
         fecha_reserva: reservation.fecha_reserva,
-        valor_reserva: reservation.valor_reserva,
+        valor_reserva: valorTotalActualizado, // Se envía el precio actualizado.
         estado: reservation.estado,
-        isPast: isPast,
-        canCancel: !isPast && reservation.estado !== 'cancelado' && reservation.estado !== 'completado',
+        isPast: fechaVuelo < now,
+        canCancel: fechaVuelo >= now && reservation.estado !== 'cancelado' && reservation.estado !== 'completado',
         flight: {
           id: flight.id,
           origen: flight.origen,
           fechahora_salida: flight.fechahora_salida,
           fechahora_llegada: flight.fechahora_llegada,
           aerolinea: flight.aerolinea,
-          destino: {
-            id: flight.destino.id,
-            nombre: flight.destino.nombre,
-            imagen: flight.destino.imagen
-          }
+          destino: flight.destino
         }
       };
     }).filter(Boolean);
 
     res.status(200).json({
       message: 'Reservas encontradas',
-      cantidad: responseData.length,
       data: responseData
     });
   } catch (error: any) {
-    console.error('Error al obtener reservas:', error);
     res.status(500).json({ message: error.message });
   }
 }
-
-
 
 async function update(req: Request,res: Response) {
     try {

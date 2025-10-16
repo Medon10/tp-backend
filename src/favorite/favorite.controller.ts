@@ -2,14 +2,12 @@ import { Request, Response } from "express";
 import { orm } from "../shared/bdd/orm.js";
 import { Favorite } from "./favorite.entity.js";
 import { Flight } from "../flight/flight.entity.js";
-import { calcularPrecio } from "../shared/utils/precio.js";
+import { calcularPrecio, DISTANCIAS} from "../shared/utils/precio.js";
 
-
-// Obtener favoritos del usuario autenticado
 async function findUserFavorites(req: Request, res: Response) {
   try {
     const em = orm.em.fork();
-    const userId = (req as any).user.id; // Del middleware de autenticación
+    const userId = (req as any).user.id; 
 
     const favorites = await em.find(
       Favorite,
@@ -20,11 +18,10 @@ async function findUserFavorites(req: Request, res: Response) {
       }
     );
 
-    // Ahora se calcula el precio dinámico para cada vuelo favorito.
     const favoriteFlights = favorites.map(fav => {
       if (!fav.flight) return null;
-      const precioCalculado = calcularPrecio(fav.flight);
-      return { ...fav.flight, montoVuelo: precioCalculado };
+      const { precioPorPersona } = calcularPrecio(fav.flight, fav.flight.origen);
+      return { ...fav.flight, montoVuelo: precioPorPersona };
     }).filter(Boolean);
 
     res.status(200).json({
@@ -37,7 +34,6 @@ async function findUserFavorites(req: Request, res: Response) {
   }
 }
 
-// Agregar a favoritos
 async function addFavorite(req: Request, res: Response) {
   try {
     const em = orm.em.fork();

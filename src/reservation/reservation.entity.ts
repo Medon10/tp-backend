@@ -18,6 +18,9 @@ export class Reservation extends BaseEntity {
     @ManyToOne(() => User)
     usuario!: User;
 
+    @Property({ nullable: true })
+    personas?: number;
+
     @ManyToOne('Flight')
-    flight!: Rel<Flight>; // Relación con el vuelo, puede ser un objeto Flight o un ID de vuelo
+    flight!: Rel<Flight>;
 }
