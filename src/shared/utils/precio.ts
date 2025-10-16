@@ -1,6 +1,6 @@
 import { Flight } from "../../flight/flight.entity.js";
 
-export function calcularPrecio(flight: Flight, origen: string, personas: number = 1): { 
+export function calcularPrecio(flight: Flight, origen: string = "Buenos Aires", personas: number = 1): { 
   precioPorPersona: number;
   precioTotal: number;
 } {
