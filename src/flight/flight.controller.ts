@@ -254,6 +254,7 @@ async function buscarVuelos(req: Request, res: Response) {
     }
 
     let queryConditions: any = {
+      origen: { $eq: origen },
       cantidad_asientos: { $gte: personas } 
     };
 
