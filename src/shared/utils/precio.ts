@@ -35,6 +35,9 @@ export function calcularPrecio(flight: Flight, origen: string = "Buenos Aires", 
     precioFinal *= 1.2;
   }
 
+  const cantidadAsientos = Number(flight.cantidad_asientos) || 0;
+  const capacidadRestante = Number(flight.capacidad_restante) || 0;
+  
   const precioPorPersona = Math.round(precioFinal);
   const precioTotal = precioPorPersona * personas;
 
