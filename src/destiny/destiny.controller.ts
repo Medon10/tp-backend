@@ -6,10 +6,10 @@ import { uploadDestinyImage } from '../shared/middleware/uploadImage.js';
 async function findAll (req:Request, res:Response) {
     try {
         const em = orm.em.fork();
-        const destiny = await em.find(Destiny, {})
-        res.json({data:destiny})
+        const destinies = await em.find(Destiny, {}, { populate: ['flights'] });
+        res.json({data:destinies});
     } catch (error) {
-        res.status(500).json({message: 'Error al obtener destinos', error})
+        res.status(500).json({message: 'Error al obtener destinos', error});
     }
 }
 

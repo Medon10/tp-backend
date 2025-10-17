@@ -4,7 +4,31 @@ import { Reservation } from "./reservation.entity.js"
 import { User } from "../user/user.entity.js";
 import { Flight } from "../flight/flight.entity.js"; 
 import { LockMode } from "@mikro-orm/core"; 
-import { calcularPrecio } from "../shared/utils/precio.js";
+import { DISTANCIAS } from "../shared/utils/precio.js";
+
+function calcularPrecio(flight: Flight, origen: string): number {
+  let precioFinal = flight.montoVuelo ?? 500;
+  const distanciaDestino = DISTANCIAS[flight.destino.nombre] || 10000;
+  const distanciaTotal = Math.abs(distanciaDestino - (DISTANCIAS[origen] || 0));
+  precioFinal += distanciaTotal * 0.05;
+
+  const cantidadAsientos = Number(flight.cantidad_asientos) || 0;
+  const capacidadRestante = Number(flight.capacidad_restante) || 0;
+
+  if (cantidadAsientos > 0) {
+      const ocupacion = (cantidadAsientos - capacidadRestante) / cantidadAsientos;
+      if (ocupacion >= 0.8) precioFinal *= 1.5;
+      else if (ocupacion >= 0.6) precioFinal *= 1.3;
+      else if (ocupacion >= 0.4) precioFinal *= 1.15;
+  }
+
+  const diasHastaVuelo = (new Date(flight.fechahora_salida).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
+  if (diasHastaVuelo <= 7) precioFinal *= 1.4;
+  else if (diasHastaVuelo <= 30) precioFinal *= 1.3;
+  else if (diasHastaVuelo <= 60) precioFinal *= 1.2;
+
+  return Math.round(precioFinal);
+}
 
 async function findAll (req:Request, res:Response) {
     try {
@@ -56,10 +80,10 @@ async function add(req: Request, res: Response) {
 
             flight.capacidad_restante -= personas;
 
-            const { precioPorPersona } = calcularPrecio(flight, flight.origen);
+            const precioPorPersona = calcularPrecio(flight, flight.origen);
             const valorTotalReserva = precioPorPersona * personas;
 
-            const now = new Date(); // Se define la fecha actual
+            const now = new Date();
             const nuevaReserva = em.create(Reservation, {
                 fecha_reserva: now.toISOString().split('T')[0],
                 valor_reserva: valorTotalReserva,
@@ -101,7 +125,7 @@ async function findUserReservations(req: Request, res: Response) {
       const flight = reservation.flight as any;
       if (!flight || !flight.destino) return null;
 
-      const { precioPorPersona } = calcularPrecio(flight, flight.origen);
+      const precioPorPersona = calcularPrecio(flight, flight.origen);
       const valorTotalActualizado = precioPorPersona * (reservation.personas || 1);
 
       const fechaVuelo = new Date(flight.fechahora_salida);
@@ -109,7 +133,7 @@ async function findUserReservations(req: Request, res: Response) {
       return {
         id: reservation.id,
         fecha_reserva: reservation.fecha_reserva,
-        valor_reserva: valorTotalActualizado, // Se envía el precio actualizado.
+        valor_reserva: valorTotalActualizado,
         estado: reservation.estado,
         isPast: fechaVuelo < now,
         canCancel: fechaVuelo >= now && reservation.estado !== 'cancelado' && reservation.estado !== 'completado',
@@ -164,7 +188,6 @@ async function remove(req: Request, res: Response){
     }
 }
 
-// Cancelar una reserva
 async function cancelReservation(req: Request, res: Response) {
   try {
     const em = orm.em.fork();
