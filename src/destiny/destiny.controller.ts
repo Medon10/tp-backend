@@ -96,7 +96,6 @@ async function uploadImage(req: Request, res: Response) {
       return res.status(404).json({ message: 'Destino no encontrado' });
     }
 
-    // Guardar la URL relativa
     destiny.imagen = `/uploads/destinos/${req.file.filename}`;
     await em.flush();
 

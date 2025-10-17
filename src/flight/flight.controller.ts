@@ -4,6 +4,7 @@ import { Flight } from "./flight.entity.js"
 import { Destiny } from "../destiny/destiny.entity.js";
 import { Reservation } from "../reservation/reservation.entity.js";
 import { Favorite } from "../favorite/favorite.entity.js";
+import { calcularPrecio } from "../shared/utils/precio.js";
 
 export const DISTANCIAS: { [key: string]: number } = {
   'Buenos Aires': 0,
@@ -234,25 +235,6 @@ async function remove(req: Request, res: Response){
     }
 }
 
-function calcularPrecio(flight: Flight, origen: string = 'Buenos Aires'): number {
-  let precioFinal = flight.montoVuelo ?? 500;
-  const distanciaDestino = DISTANCIAS[flight.destino.nombre] || 10000;
-  const distanciaTotal = Math.abs(distanciaDestino - (DISTANCIAS[origen] || 0));
-  
-  precioFinal += distanciaTotal * 0.05;
-
-  const ocupacion = (flight.cantidad_asientos - (flight as any).capacidad_restante) / flight.cantidad_asientos;
-  if (ocupacion >= 0.8) precioFinal *= 1.5;
-  else if (ocupacion >= 0.6) precioFinal *= 1.3;
-  else if (ocupacion >= 0.4) precioFinal *= 1.15;
-
-  const diasHastaVuelo = (new Date(flight.fechahora_salida).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
-  if (diasHastaVuelo <= 7) precioFinal *= 1.4;
-  else if (diasHastaVuelo <= 30) precioFinal *= 1.3;
-  else if (diasHastaVuelo <= 60) precioFinal *= 1.2;
-
-  return Math.round(precioFinal);
-}
 
 async function buscarVuelos(req: Request, res: Response) {
   try {
@@ -305,7 +287,7 @@ async function buscarVuelos(req: Request, res: Response) {
 
     const vuelosConPrecio = flights
       .map(flight => {
-        const precioPorPersona = calcularPrecio(flight, origen);
+        const { precioPorPersona } = calcularPrecio(flight, flight.origen);
         const precioTotal = precioPorPersona * personas;
 
         return {
