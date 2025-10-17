@@ -33,17 +33,13 @@ async function signup(req: Request, res: Response) {
     const em = orm.em.fork();
     const { email, password, nombre, apellido } = req.body.sanitizedInput;
 
-    // Verificar si el usuario ya existe
     const existing = await em.findOne(User, { email });
     if (existing) {
       return res.status(409).json({ message: "Este email ya está registrado" });
     }
-
-    // Crear usuario (la contraseña ya viene hasheada del middleware)
     const user = em.create(User, req.body.sanitizedInput);
     await em.flush();
-
-    // Devolver usuario sin la contraseña
+    
     const { password: _, ...userWithoutPassword } = user;
     
     res.status(201).json({ 

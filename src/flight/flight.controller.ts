@@ -5,6 +5,25 @@ import { Destiny } from "../destiny/destiny.entity.js";
 import { Reservation } from "../reservation/reservation.entity.js";
 import { Favorite } from "../favorite/favorite.entity.js";
 
+export const DISTANCIAS: { [key: string]: number } = {
+  'Buenos Aires': 0,
+  'Venecia': 11000,
+  'Tierra del Fuego': 2800,
+  'Pisos Picados': 1500,
+  'Kino Der Toten': 12000,
+  'Japón': 18500,
+  'Grecia': 11500,
+  'Tailandia': 16500,
+  'Islandia': 13500,
+  'Perú': 3200,
+  'Australia': 13800,
+  'Egipto': 11800,
+  'Nueva Zelanda': 11500,
+  'Marruecos': 9500,
+  'Noruega': 13000
+};
+
+
 async function findAll(req: Request, res: Response) {
   try {
     const em = orm.em.fork();
@@ -90,14 +109,16 @@ async function add(req: Request, res: Response) {
         console.log('Datos recibidos:', req.body.sanitizedInput);
         
         const { destino_id, ...flightData } = req.body.sanitizedInput;
-        
-        if (!destino_id) {
-            return res.status(400).json({
-                message: 'Error al crear vuelo',
-                error: 'destino_id es requerido'
-            });
+
+        const fechaSalida = new Date(flightData.fechahora_salida);
+        const fechaLlegada = new Date(flightData.fechahora_llegada);
+
+        if (fechaSalida < new Date()) {
+            return res.status(400).json({ message: 'No se puede crear un vuelo en una fecha que ya ha pasado.' });
         }
-        
+        if (fechaLlegada <= fechaSalida) {
+            return res.status(400).json({ message: 'La fecha de llegada debe ser posterior a la fecha de salida.' });
+        }
         const destino = await em.findOne(Destiny, destino_id);
         if (!destino) {
             return res.status(400).json({
@@ -148,19 +169,35 @@ async function add(req: Request, res: Response) {
     }
 }
 
-async function update(req: Request,res: Response) {
+async function update(req: Request, res: Response) {
     try {
         const em = orm.em.fork();
-        const id = Number.parseInt(req.params.id)
-        const flight = await em.findOne(Flight, { id })
-        if (!flight) {
-            return res.status(404).send({ message: 'vuelo no encontrado' })
+        const id = Number.parseInt(req.params.id);
+        const flightData = req.body.sanitizedInput;
+        
+        if (flightData.fechahora_salida && flightData.fechahora_llegada) {
+            const fechaSalida = new Date(flightData.fechahora_salida);
+            const fechaLlegada = new Date(flightData.fechahora_llegada);
+
+            const hoy = new Date();
+            hoy.setHours(0, 0, 0, 0);
+
+            if (fechaSalida < hoy) {
+                return res.status(400).json({ message: 'No se puede actualizar un vuelo a una fecha que ya ha pasado.' });
+            }
+            if (fechaLlegada <= fechaSalida) {
+                return res.status(400).json({ message: 'La fecha de llegada debe ser posterior a la fecha de salida.' });
+            }
         }
-        em.assign(flight, req.body.sanitizedInput)
-        await em.flush()
-        res.status(200).send({ message: 'vuelo actualizado', data: flight })
+        const flight = await em.findOne(Flight, { id });
+        if (!flight) {
+            return res.status(404).send({ message: 'Vuelo no encontrado' });
+        }
+        em.assign(flight, flightData);
+        await em.flush();
+        res.status(200).send({ message: 'Vuelo actualizado', data: flight });
     } catch (error) {
-        res.status(500).json({ message: 'Error al actualizar vuelo', error })
+        res.status(500).json({ message: 'Error al actualizar vuelo', error });
     }
 }
 
@@ -196,25 +233,6 @@ async function remove(req: Request, res: Response){
         res.status(500).json({ message: 'Error interno al borrar el vuelo.', error: error.message });
     }
 }
-
-
-const DISTANCIAS: { [key: string]: number } = {
-  'Buenos Aires': 0,
-  'Venecia': 11000,
-  'Tierra del Fuego': 2800,
-  'Pisos Picados': 1500,
-  'Kino Der Toten': 12000,
-  'Japón': 18500,
-  'Grecia': 11500,
-  'Tailandia': 16500,
-  'Islandia': 13500,
-  'Perú': 3200,
-  'Australia': 13800,
-  'Egipto': 11800,
-  'Nueva Zelanda': 11500,
-  'Marruecos': 9500,
-  'Noruega': 13000
-};
 
 function calcularPrecio(flight: Flight, origen: string = 'Buenos Aires'): number {
   let precioFinal = flight.montoVuelo ?? 500;
@@ -257,7 +275,7 @@ async function buscarVuelos(req: Request, res: Response) {
 
     let queryConditions: any = {
       cantidad_asientos: { $gte: personas },
-      origen: origen // Se añade el filtro de la ciudad de origen a la consulta.
+      origen: origen
     };
 
     if (fecha_salida) {
