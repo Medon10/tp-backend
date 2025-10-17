@@ -4,6 +4,7 @@ import { Reservation } from "./reservation.entity.js"
 import { User } from "../user/user.entity.js";
 import { Flight } from "../flight/flight.entity.js"; 
 import { LockMode } from "@mikro-orm/core"; 
+import { calcularPrecio } from "../shared/utils/precio.js";
 
 async function findAll (req:Request, res:Response) {
     try {
@@ -30,51 +31,95 @@ async function findOne(req: Request, res: Response) {
 }
 
 async function add(req: Request, res: Response) {
+  try {
     const em = orm.em.fork();
-    try {
-        await em.transactional(async (em) => {
-            const { flight_id, personas } = req.body;
-            const usuario_id = (req as any).user.id; 
+    const userId = (req as any).user.id;
+    const { flight_id, cantidad_personas } = req.body.sanitizedInput;
 
-            if (!flight_id || !personas) {
-                res.status(400);
-                throw new Error('Faltan datos: se requiere ID del vuelo y cantidad de personas.');
-            }
+    console.log(' Creando reserva:', { userId, flight_id, cantidad_personas });
 
-            const flight = await em.findOne(Flight, { id: flight_id }, { lockMode: LockMode.PESSIMISTIC_WRITE });
-
-            if (!flight) {
-                res.status(404);
-                throw new Error('El vuelo seleccionado no fue encontrado.');
-            }
-
-            if (flight.capacidad_restante < personas) {
-                res.status(409);
-                throw new Error('No hay suficientes asientos disponibles.');
-            }
-
-            flight.capacidad_restante -= personas;
-
-            const now = new Date();
-            const nuevaReserva = em.create(Reservation, {
-                fecha_reserva: now.toISOString().split('T')[0],
-                valor_reserva: flight.montoVuelo * personas,
-                estado: 'confirmado',
-                usuario: em.getReference(User, usuario_id),
-                flight: flight,
-                createdAt: now,
-                updatedAt: now
-            });
-            em.persist(nuevaReserva);
-        });
-
-        res.status(201).json({ message: '¡Viaje reservado exitosamente!' });
-
-    } catch (error: any) {
-        console.error('Error al crear la reserva:', error);
-        const statusCode = res.statusCode >= 400 ? res.statusCode : 500;
-        res.status(statusCode).json({ message: error.message || 'Error interno al procesar la reserva.' });
+    // Validaciones
+    if (!flight_id || !cantidad_personas) {
+      return res.status(400).json({
+        message: 'ID de vuelo y cantidad de personas son requeridos'
+      });
     }
+
+    if (cantidad_personas < 1 || cantidad_personas > 10) {
+      return res.status(400).json({
+        message: 'La cantidad de personas debe estar entre 1 y 10'
+      });
+    }
+
+    // Verificar que el vuelo existe
+    const flight = await em.findOne(
+      Flight,
+      { id: flight_id },
+      { populate: ['destino'] }
+    );
+
+    if (!flight) {
+      return res.status(404).json({ message: 'Vuelo no encontrado' });
+    }
+
+    // Verificar disponibilidad
+    if (flight.capacidad_restante < cantidad_personas) {
+      return res.status(400).json({
+        message: `No hay suficientes asientos disponibles. Quedan ${flight.capacidad_restante} asientos.`
+      });
+    }
+
+    // Verificar que el vuelo sea futuro
+    const fechaVuelo = new Date(flight.fechahora_salida);
+    if (fechaVuelo < new Date()) {
+      return res.status(400).json({
+        message: 'No se puede reservar un vuelo que ya partió'
+      });
+    }
+
+
+    const precioCalc = calcularPrecio(flight, flight.origen, cantidad_personas);
+    const precio_total = precioCalc.precioTotal; 
+
+    // Crear reserva (no se genera código, el id será la referencia)
+    const reservation = em.create(Reservation, {
+      usuario: em.getReference(User, userId),
+      flight: flight,
+      cantidad_personas,
+      valor_reserva: precio_total,
+      estado: 'confirmado',
+      fecha_reserva: new Date().toISOString(),
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+
+    // Actualizar capacidad del vuelo
+    flight.capacidad_restante -= cantidad_personas;
+
+    await em.flush();
+
+    console.log(' Reserva creada:', reservation.id);
+
+    res.status(201).json({
+      message: 'Reserva creada exitosamente',
+      data: {
+        id: reservation.id,
+        vuelo: {
+          id: flight.id,
+          origen: flight.origen,
+          destino: flight.destino.nombre,
+          fecha_salida: flight.fechahora_salida
+        },
+        cantidad_personas: reservation.cantidad_personas,
+        precio_total: reservation.valor_reserva,
+        estado: reservation.estado
+      }
+    });
+
+  } catch (error: any) {
+    console.error(' Error al crear reserva:', error);
+    res.status(500).json({ message: error.message });
+  }
 }
 
 async function findUserReservations(req: Request, res: Response) {
