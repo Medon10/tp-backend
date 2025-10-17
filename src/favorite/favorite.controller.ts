@@ -2,52 +2,15 @@ import { Request, Response } from "express";
 import { orm } from "../shared/bdd/orm.js";
 import { Favorite } from "./favorite.entity.js";
 import { Flight } from "../flight/flight.entity.js";
-
-// Se añade la lógica de cálculo de precios para ser usada en esta sección.
-const DISTANCIAS: { [key: string]: number } = {
-  'Buenos Aires': 0,
-  'Venecia': 11000,
-  'Tierra del Fuego': 2800,
-  'Pisos Picados': 1500,
-  'Kino Der Toten': 12000,
-  'Japón': 18500,
-  'Grecia': 11500,
-  'Tailandia': 16500,
-  'Islandia': 13500,
-  'Perú': 3200,
-  'Australia': 13800,
-  'Egipto': 11800,
-  'Nueva Zelanda': 11500,
-  'Marruecos': 9500,
-  'Noruega': 13000
-};
-
-function calcularPrecio(flight: Flight, origen: string = 'Buenos Aires'): number {
-  let precioFinal = flight.montoVuelo ?? 500;
-  const distanciaDestino = DISTANCIAS[flight.destino.nombre] || 10000;
-  const distanciaTotal = Math.abs(distanciaDestino - (DISTANCIAS[origen] || 0));
-  
-  precioFinal += distanciaTotal * 0.05;
-
-  const ocupacion = (flight.cantidad_asientos - flight.capacidad_restante) / flight.cantidad_asientos;
-  if (ocupacion >= 0.8) precioFinal *= 1.5;
-  else if (ocupacion >= 0.6) precioFinal *= 1.3;
-  else if (ocupacion >= 0.4) precioFinal *= 1.15;
-
-  const diasHastaVuelo = (new Date(flight.fechahora_salida).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
-  if (diasHastaVuelo <= 7) precioFinal *= 1.4;
-  else if (diasHastaVuelo <= 30) precioFinal *= 1.3;
-  else if (diasHastaVuelo <= 60) precioFinal *= 1.2;
-
-  return Math.round(precioFinal);
-}
-
+import { calcularPrecio } from "../shared/utils/precio.js";
 
 // Obtener favoritos del usuario autenticado
 async function findUserFavorites(req: Request, res: Response) {
   try {
     const em = orm.em.fork();
-    const userId = (req as any).user.id; // Del middleware de autenticación
+    const userId = (req as any).user.id;
+
+    console.log('Buscando favoritos para usuario:', userId);
 
     const favorites = await em.find(
       Favorite,
@@ -58,20 +21,70 @@ async function findUserFavorites(req: Request, res: Response) {
       }
     );
 
-    // Ahora se calcula el precio dinámico para cada vuelo favorito.
-    const favoriteFlights = favorites.map(fav => {
-      if (!fav.flight) return null;
-      const precioCalculado = calcularPrecio(fav.flight);
-      return { ...fav.flight, montoVuelo: precioCalculado };
-    }).filter(Boolean);
+    console.log('Favoritos encontrados:', favorites.length);
+
+    // Filtrar favoritos válidos y calcular precios
+    const favoritosConPrecio = favorites
+      .filter(fav => {
+        // Verificar que el vuelo existe y está poblado
+        if (!fav.flight) {
+          console.warn('⚠️ Favorito sin vuelo:', fav.id);
+          return false;
+        }
+        return true;
+      })
+      .map(fav => {
+        try {
+          const flight = fav.flight;
+          const origen = flight.origen || 'Buenos Aires';
+
+          console.log('Calculando precio para vuelo:', flight.id);
+
+          const { precioPorPersona } = calcularPrecio(flight, origen, 1);
+
+          return {
+            id: fav.id,
+            fecha_guardado: fav.createdAt,
+            vuelo: {
+              id: flight.id,
+              origen: flight.origen,
+              destino: flight.destino ? {
+                id: flight.destino.id,
+                nombre: flight.destino.nombre,
+                imagen: flight.destino.imagen,
+                transporte: flight.destino.transporte || [],
+                actividades: flight.destino.actividades || []
+              } : null,
+              fechahora_salida: flight.fechahora_salida,
+              fechahora_llegada: flight.fechahora_llegada,
+              aerolinea: flight.aerolinea,
+              duracion: flight.duracion,
+              capacidad_restante: flight.capacidad_restante || 0,
+              precio_por_persona: precioPorPersona,
+              distancia_aproximada: flight.distancia_km || 0
+            }
+          };
+        } catch (error) {
+          console.error('Error al procesar favorito:', fav.id, error);
+          return null;
+        }
+      })
+      .filter(fav => fav !== null); // Remover favoritos con errores
+
+    console.log('Enviando respuesta con', favoritosConPrecio.length, 'favoritos');
 
     res.status(200).json({
       message: 'Favoritos encontrados',
-      cantidad: favoriteFlights.length,
-      data: favoriteFlights
+      cantidad: favoritosConPrecio.length,
+      data: favoritosConPrecio
     });
   } catch (error: any) {
-    res.status(500).json({ message: error.message });
+    console.error('Error en findUserFavorites:', error);
+    console.error('Stack:', error.stack);
+    res.status(500).json({ 
+      message: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 }
 
