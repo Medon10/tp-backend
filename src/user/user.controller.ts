@@ -174,9 +174,15 @@ async function getUserStats(req: Request, res: Response) {
       estado: 'completado' 
     });
 
-    console.log(' Viajes completados:', viajesCompletados);
+    const proximosViajes = await em.count(Reservation, {
+      usuario: userId,
+      estado: 'confirmado'
+    });
 
-    // Obtener próximo viaje (estado CONFIRMADO, ordenado por fecha de vuelo)
+    console.log(' Viajes completados:', viajesCompletados);
+    console.log(' Próximos viajes:', proximosViajes);
+
+    // Obtener el ultimo próximo viaje (estado CONFIRMADO, ordenado por fecha de vuelo)
     const proximoViaje = await em.findOne(
       Reservation,
       {
@@ -228,6 +234,7 @@ async function getUserStats(req: Request, res: Response) {
 
     const responseData = {
       viajesCompletados,
+      proximosViajes,
       proximoViaje: proximoViaje ? {
         id: proximoViaje.id,
         destino: proximoViaje.flight?.destino?.nombre || 'Destino desconocido',
