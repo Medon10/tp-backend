@@ -7,7 +7,11 @@ import { calcularPrecio } from "../shared/utils/precio.js";
 async function findAll (req:Request, res:Response) {
     try {
         const em = orm.em.fork();
-        const flights = await em.find(Flight, {})
+        const flights = await em.find(
+            Flight, 
+            {},
+            { populate: ['destino'] } 
+        )
         res.json({data:flights})
     } catch (error) {
         res.status(500).json({message: 'Error al obtener vuelos', error})
@@ -18,7 +22,11 @@ async function findOne(req: Request, res: Response) {
     try {
         const em = orm.em.fork();
         const id = Number(req.params.id)
-        const flight = await em.findOne(Flight, { id })
+        const flight = await em.findOne(
+            Flight, 
+            { id },
+            { populate: ['destino'] }
+        )
         if (!flight){
             return res.status(404).send({message:'No encontrado'})
         }
@@ -153,13 +161,32 @@ async function update(req: Request,res: Response) {
     try {
         const em = orm.em.fork();
         const id = Number.parseInt(req.params.id)
-        const flight = await em.findOne(Flight, { id })
+        const flight = await em.findOne(
+            Flight, 
+            { id },
+            { populate: ['destino'] } 
+        )
         if (!flight) {
             return res.status(404).send({ message: 'vuelo no encontrado' })
         }
-        em.assign(flight, req.body.sanitizedInput)
+        
+        // Si viene destino_id en el body, actualizar la relación
+        const { destino_id, ...flightData } = req.body.sanitizedInput;
+        
+        if (destino_id) {
+            const destino = await em.findOne(Destiny, destino_id);
+            if (!destino) {
+                return res.status(400).json({
+                    message: 'Destino no encontrado'
+                });
+            }
+            em.assign(flight, { ...flightData, destino });
+        } else {
+            em.assign(flight, flightData);
+        }
+        
         await em.flush()
-        res.status(200).send({ message: 'vuelo actualizado', data: flight })
+        res.status(200).send({ message: 'Vuelo actualizado exitosamente', data: flight })
     } catch (error) {
         res.status(500).json({ message: 'Error al actualizar vuelo', error })
     }
