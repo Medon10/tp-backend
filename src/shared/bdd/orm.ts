@@ -5,12 +5,8 @@ import { MySqlDriver } from '@mikro-orm/mysql';
 export const orm = await MikroORM.init({
     entities: ['dist/**/*.entity.js'],
     entitiesTs: ['src/**/*.entity.ts'],
-    dbName: process.env.DB_NAME || 'VuelosApp',
     driver: MySqlDriver,
-    host: process.env.DB_HOST || 'localhost',
-    user: process.env.DB_USER || 'root',
-    password : process.env.DB_PASSWORD || '',
-    highlighter: new SqlHighlighter(),
+    clientUrl: process.env.DB_URL || '',
     debug: true,
     schemaGenerator: { //nunca en producción, solo desarrollo
         disableForeignKeys: true,
