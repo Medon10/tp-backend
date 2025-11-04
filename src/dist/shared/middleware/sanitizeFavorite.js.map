@@ -1,1 +1,0 @@
-{"version":3,"file":"sanitizeFavorite.js","sourceRoot":"","sources":["../../../shared/middleware/sanitizeFavorite.ts"],"names":[],"mappings":"AAEA,MAAM,UAAU,qBAAqB,CAAC,GAAY,EAAE,GAAa,EAAE,IAAkB;IACnF,GAAG,CAAC,IAAI,CAAC,cAAc,GAAG;QACxB,SAAS,EAAE,MAAM,CAAC,GAAG,CAAC,IAAI,CAAC,SAAS,CAAC;KACtC,CAAC;IACF,IAAI,EAAE,CAAC;AACT,CAAC"}
