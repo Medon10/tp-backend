@@ -12,7 +12,8 @@
     "alwaysStrict": true,
     "skipLibCheck": true,
     "emitDecoratorMetadata": true,
-    "experimentalDecorators": true
+    "experimentalDecorators": true,
+    "types": ["node", "express", "jsonwebtoken", "multer"]
   },
   "include": ["src/**/*", "**/*.ts"],
   "exclude": ["dist", "node_modules"]
