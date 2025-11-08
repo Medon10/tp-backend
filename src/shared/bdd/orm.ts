@@ -7,7 +7,7 @@ export const orm = await MikroORM.init({
     entitiesTs: ['src/**/*.entity.ts'],
     driver: MySqlDriver,
     clientUrl: process.env.DB_URL || '',
-    debug: true,
+    debug: false,
     schemaGenerator: { //nunca en producción, solo desarrollo
         disableForeignKeys: true,
         createForeignKeyConstraints: true,
