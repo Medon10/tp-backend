@@ -21,11 +21,24 @@ app.disable('x-powered-by');
 
 app.use(cookieParser());
 
+// CORS configuration (allow list). Use env FRONTEND_ORIGINS (comma separated) in prod.
+const defaultOrigins = [
+  'http://localhost:5173',
+  'https://vacationmatch.onrender.com', // legacy
+  'https://vacationmatch-frontend.onrender.com', // Render static site
+];
+const allowedOrigins = (process.env.FRONTEND_ORIGINS || defaultOrigins.join(',') )
+  .split(',')
+  .map(o => o.trim())
+  .filter(Boolean);
+
 app.use(cors({
-  origin: [
-    'http://localhost:5173', 
-    'https://vacationmatch.onrender.com'
-  ],
+  origin: (origin, callback) => {
+    // Allow server-to-server or curl (no origin)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error(`Not allowed by CORS: ${origin}`));
+  },
   credentials: true,
 }));
 
