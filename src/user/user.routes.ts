@@ -6,14 +6,6 @@ import { verifyToken } from "../shared/middleware/verifytoken.js";
 
 export const userRouter = Router()
 
-// Manejar explícitamente las requests OPTIONS para /login
-userRouter.options('/login', (req, res) => {
-  res.header('Access-Control-Allow-Origin', 'http://localhost:5173');
-  res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.status(200).end();
-});
 //ruta de prueba
 userRouter.get("/test", (req, res) => {
   res.json({ 
