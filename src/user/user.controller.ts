@@ -77,12 +77,13 @@ async function login(req: Request, res: Response) {
       { expiresIn: "1h" }
     );
 
-    // Configurar cookie con el token
+    // Configurar cookie con el token (ajustada para cross-site en producción)
+    const isProd = process.env.NODE_ENV === 'production';
     res.cookie('token', token, {
       httpOnly: true,
-      secure: false, 
-      sameSite: 'lax',
-      maxAge: 3600000 // 1 hora 
+      secure: isProd, // requerido para SameSite=None
+      sameSite: isProd ? 'none' : 'lax',
+      maxAge: 3600000, // 1 hora
     });
     const { password: _, ...userWithoutPassword } = user;
     
@@ -150,7 +151,12 @@ async function remove(req:Request, res: Response) {
 }
 
 async function logout(req: Request, res: Response) {
-  res.clearCookie('token');
+  const isProd = process.env.NODE_ENV === 'production';
+  res.clearCookie('token', {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: isProd ? 'none' : 'lax',
+  });
   res.status(200).json({ message: "Logout exitoso" });
 }
 
