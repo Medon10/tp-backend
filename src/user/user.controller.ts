@@ -87,7 +87,7 @@ async function login(req: Request, res: Response) {
     });
     const { password: _, ...userWithoutPassword } = user;
     
-    res.status(200).json({ message: "Login exitoso", user: userWithoutPassword });
+  res.status(200).json({ message: "Login exitoso", user: userWithoutPassword, token });
   } catch (error: any) {
     console.error("Login error:", error);
     res.status(500).json({ message: error.message });

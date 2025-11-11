@@ -13,7 +13,12 @@ declare global {
 const TOKEN_SECRET = process.env.TOKEN_SECRET;
 
 export function verifyToken(req: Request, res: Response, next: NextFunction): void {
-  const token = req.cookies.token;
+  // Soportar cookie o encabezado Authorization: Bearer <token>
+  const authHeader = req.headers['authorization'];
+  const bearer = authHeader && authHeader.startsWith('Bearer ')
+    ? authHeader.substring('Bearer '.length)
+    : undefined;
+  const token = bearer || req.cookies.token;
   const TOKEN_SECRET = process.env.TOKEN_SECRET;
 
   if (!token) {
