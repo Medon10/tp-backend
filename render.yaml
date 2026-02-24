@@ -1,3 +1,5 @@
+# NOTA: Este archivo es legacy de un deploy anterior en Render.
+# La plataforma de deploy está siendo migrada. Ver README.md para opciones actuales.
 services:
   - type: web
     name: vacationmatch-backend

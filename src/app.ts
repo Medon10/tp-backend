@@ -13,6 +13,7 @@ import { userRouter } from './user/user.routes.js';
 import { reservationRouter } from './reservation/reservation.routes.js';
 import { destinyRouter } from './destiny/destiny.routes.js';
 import { favoriteRouter } from './favorite/favorite.routes.js';
+import { paymentRouter } from './payment/payment.routes.js';
 
 const app = express();
 const PORT = 3000;
@@ -24,8 +25,6 @@ app.use(cookieParser());
 // CORS configuration (allow list). Use env FRONTEND_ORIGINS (comma separated) in prod.
 const defaultOrigins = [
   'http://localhost:5173',
-  'https://vacationmatch.onrender.com', // legacy
-  'https://vacationmatch-frontend.onrender.com', // Render static site
 ];
 const allowedOrigins = (process.env.FRONTEND_ORIGINS || defaultOrigins.join(',') )
   .split(',')
@@ -54,6 +53,7 @@ app.use('/api/users', userRouter);
 app.use('/api/reservations', reservationRouter);
 app.use('/api/destinies', destinyRouter);
 app.use('/api/favorites', favoriteRouter);
+app.use('/api/payments', paymentRouter);
 
 
 const __filename = fileURLToPath(import.meta.url);
