@@ -51,16 +51,11 @@ async function signup(req: Request, res: Response) {
       user: userWithoutPassword 
     });
   } catch (error: any) {
-    console.error("Signup error:", error);
     res.status(500).json({ message: "Error interno del servidor" });
   }
 }
 
 async function login(req: Request, res: Response) {
-  console.log("=== LOGIN CONTROLLER ===");
-  console.log("Body:", req.body);
-  console.log("Sanitized input:", req.body.sanitizedInput);
-
   try {
     const em = orm.em.fork();
     const { email, password } = req.body.sanitizedInput;
@@ -89,7 +84,6 @@ async function login(req: Request, res: Response) {
     
   res.status(200).json({ message: "Login exitoso", user: userWithoutPassword, token });
   } catch (error: any) {
-    console.error("Login error:", error);
     res.status(500).json({ message: error.message });
   }
   
@@ -165,8 +159,6 @@ async function getUserStats(req: Request, res: Response) {
     const em = orm.em.fork();
     const userId = (req as any).user.id;
 
-    console.log(' Buscando estadísticas para usuario:', userId);
-
     // Obtener usuario
     const user = await em.findOne(User, { id: userId });
     
@@ -185,9 +177,6 @@ async function getUserStats(req: Request, res: Response) {
       estado: 'confirmado'
     });
 
-    console.log(' Viajes completados:', viajesCompletados);
-    console.log(' Próximos viajes:', proximosViajes);
-
     // Obtener el ultimo próximo viaje (estado CONFIRMADO, ordenado por fecha de vuelo)
     const proximoViaje = await em.findOne(
       Reservation,
@@ -200,8 +189,6 @@ async function getUserStats(req: Request, res: Response) {
         orderBy: { createdAt: 'DESC' } 
       }
     );
-
-    console.log(' Próximo viaje encontrado:', proximoViaje ? 'Sí' : 'No');
 
     // Calcular años como miembro
     const fechaRegistro = user.createdAt;
@@ -253,16 +240,12 @@ async function getUserStats(req: Request, res: Response) {
       aniosNumerico: years || 0
     };
 
-    console.log('Respuesta:', responseData);
-
     res.status(200).json({
       message: 'Estadísticas del usuario',
       data: responseData
     });
 
   } catch (error: any) {
-    console.error(' Error al obtener estadísticas:', error);
-    console.error('Stack:', error.stack);
     res.status(500).json({ message: error.message });
   }
 }
@@ -298,7 +281,6 @@ async function updateProfile(req: Request, res: Response) {
     });
 
   } catch (error: any) {
-    console.error('Error al actualizar perfil:', error);
     res.status(500).json({ message: error.message });
   }
 }

@@ -13,7 +13,7 @@ export class Reservation extends BaseEntity {
     valor_reserva!: number;
 
     @Property()
-    estado!: 'confirmado' | 'cancelado' | 'completado';
+    estado!: 'pendiente' | 'confirmado' | 'cancelado' | 'completado';
 
     @Property({ nullable: true })
     cantidad_personas?: number;

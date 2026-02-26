@@ -47,7 +47,6 @@ async function add(req: Request, res: Response)  {
         res.status(201).json({ message: 'Destino creado exitosamente', data: nuevoDestino });
 
     } catch (error: any) {
-        console.error('Error al crear destino:', error);
         res.status(500).json({ message: 'Error interno del servidor al crear el destino.', error: error.message });
     }
 }

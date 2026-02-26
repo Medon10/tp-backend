@@ -89,7 +89,6 @@ async function findByDestino(req: Request, res: Response) {
       data: vuelosConPrecio
     });
   } catch (error: any) {
-    console.error('Error al buscar vuelos por destino:', error);
     res.status(500).json({ message: error.message });
   }
 }
@@ -97,8 +96,6 @@ async function findByDestino(req: Request, res: Response) {
 async function add(req: Request, res: Response) {
     try {
         const em = orm.em.fork();
-        
-        console.log('Datos recibidos:', req.body.sanitizedInput);
         
         const { destino_id, ...flightData } = req.body.sanitizedInput;
         
@@ -119,8 +116,6 @@ async function add(req: Request, res: Response) {
             });
         }
         
-        console.log('Destino encontrado:', destino);
-        
         // Crear el vuelo
         const flight = em.create(Flight, {
             ...flightData,
@@ -128,8 +123,6 @@ async function add(req: Request, res: Response) {
         });
         
         await em.flush();
-        
-        console.log('Vuelo creado:', flight);
         
         res.status(201).json({
             message: 'Vuelo creado exitosamente',
@@ -151,8 +144,8 @@ async function add(req: Request, res: Response) {
             }
         });
         
-    } catch (error) {
-        console.error('Error detallado:', error);
+    } catch (error: any) {
+        res.status(500).json({ message: 'Error al crear vuelo', error: error.message });
     }
 }
 
@@ -212,8 +205,6 @@ async function buscarVuelos(req: Request, res: Response) {
     const em = orm.em.fork();
     const { presupuesto, personas, origen, fecha_salida } = req.body.sanitizedInput;
 
-    console.log('Búsqueda de vuelos:', { presupuesto, personas, origen, fecha_salida });
-
     if (!presupuesto || !personas || !origen) {
       return res.status(400).json({ 
         message: 'Faltan parámetros: presupuesto, personas y origen son requeridos' 
@@ -246,15 +237,11 @@ async function buscarVuelos(req: Request, res: Response) {
       queryConditions.fechahora_salida = { $gte: new Date().toISOString() };
     }
 
-    console.log(' Query conditions:', queryConditions);
-
     const flights = await em.find(
       Flight, 
       queryConditions,
       { populate: ['destino'] }
     );
-
-    console.log(' Vuelos encontrados:', flights.length);
 
     const vuelosConPrecio = flights
       .map(flight => {
@@ -281,8 +268,6 @@ async function buscarVuelos(req: Request, res: Response) {
       .filter(vuelo => vuelo.precio_total <= presupuesto)
       .sort((a, b) => a.precio_total - b.precio_total);
 
-    console.log(' Vuelos dentro del presupuesto:', vuelosConPrecio.length);
-
     res.status(200).json({
       message: 'Vuelos encontrados',
       resultados: vuelosConPrecio.length,
@@ -293,8 +278,6 @@ async function buscarVuelos(req: Request, res: Response) {
     });
 
   } catch (error: any) {
-    console.error(' Error al buscar vuelos:', error);
-    console.error('Stack:', error.stack);
     res.status(500).json({ message: error.message });
   }
 }

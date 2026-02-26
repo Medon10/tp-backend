@@ -36,8 +36,6 @@ async function add(req: Request, res: Response) {
     const userId = (req as any).user.id;
     const { flight_id, cantidad_personas } = req.body.sanitizedInput;
 
-    console.log(' Creando reserva:', { userId, flight_id, cantidad_personas });
-
     // Validaciones
     if (!flight_id || !cantidad_personas) {
       return res.status(400).json({
@@ -81,24 +79,19 @@ async function add(req: Request, res: Response) {
     const precioCalc = calcularPrecio(flight, flight.origen, cantidad_personas);
     const precio_total = precioCalc.precioTotal; 
 
-    // Crear reserva (no se genera código, el id será la referencia)
+    // Crear reserva (pendiente de pago)
     const reservation = em.create(Reservation, {
       usuario: em.getReference(User, userId),
       flight: flight,
       cantidad_personas,
       valor_reserva: precio_total,
-      estado: 'confirmado',
+      estado: 'pendiente',
       fecha_reserva: new Date().toISOString(),
       createdAt: new Date(),
       updatedAt: new Date()
     });
 
-    // Actualizar capacidad del vuelo
-    flight.capacidad_restante -= cantidad_personas;
-
     await em.flush();
-
-    console.log(' Reserva creada:', reservation.id);
 
     res.status(201).json({
       message: 'Reserva creada exitosamente',
@@ -117,7 +110,6 @@ async function add(req: Request, res: Response) {
     });
 
   } catch (error: any) {
-    console.error(' Error al crear reserva:', error);
     res.status(500).json({ message: error.message });
   }
 }
@@ -157,6 +149,7 @@ async function findUserReservations(req: Request, res: Response) {
         fecha_reserva: reservation.fecha_reserva,
         valor_reserva: reservation.valor_reserva,
         estado: reservation.estado,
+        cantidad_personas: reservation.cantidad_personas,
         isPast: isPast,
         canCancel: !isPast && reservation.estado !== 'cancelado' && reservation.estado !== 'completado',
         flight: {
@@ -180,7 +173,6 @@ async function findUserReservations(req: Request, res: Response) {
       data: responseData
     });
   } catch (error: any) {
-    console.error('Error al obtener reservas:', error);
     res.status(500).json({ message: error.message });
   }
 }
@@ -259,7 +251,6 @@ async function cancelReservation(req: Request, res: Response) {
       data: reservation
     });
   } catch (error: any) {
-    console.error('Error al cancelar reserva:', error);
     res.status(500).json({ message: error.message });
   }
 }

@@ -10,8 +10,6 @@ async function findUserFavorites(req: Request, res: Response) {
     const em = orm.em.fork();
     const userId = (req as any).user.id;
 
-    console.log('Buscando favoritos para usuario:', userId);
-
     const favorites = await em.find(
       Favorite,
       { user: userId },
@@ -20,8 +18,6 @@ async function findUserFavorites(req: Request, res: Response) {
         orderBy: { createdAt: 'DESC' }
       }
     );
-
-    console.log('Favoritos encontrados:', favorites.length);
 
     // Filtrar favoritos válidos y calcular precios
     const favoritosConPrecio = favorites
@@ -37,8 +33,6 @@ async function findUserFavorites(req: Request, res: Response) {
         try {
           const flight = fav.flight;
           const origen = flight.origen || 'Buenos Aires';
-
-          console.log('Calculando precio para vuelo:', flight.id);
 
           const { precioPorPersona } = calcularPrecio(flight, origen, 1);
 
@@ -65,13 +59,10 @@ async function findUserFavorites(req: Request, res: Response) {
             }
           };
         } catch (error) {
-          console.error('Error al procesar favorito:', fav.id, error);
           return null;
         }
       })
       .filter(fav => fav !== null); // Remover favoritos con errores
-
-    console.log('Enviando respuesta con', favoritosConPrecio.length, 'favoritos');
 
     res.status(200).json({
       message: 'Favoritos encontrados',
@@ -79,11 +70,8 @@ async function findUserFavorites(req: Request, res: Response) {
       data: favoritosConPrecio
     });
   } catch (error: any) {
-    console.error('Error en findUserFavorites:', error);
-    console.error('Stack:', error.stack);
     res.status(500).json({ 
-      message: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      message: error.message
     });
   }
 }
