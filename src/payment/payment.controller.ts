@@ -87,17 +87,14 @@ export async function createPreference(req: Request, res: Response) {
     res.status(201).json({
       message: 'Preferencia creada',
       data: {
-  preferenceId: (preferenceResponse as any).id,
-  init_point: (preferenceResponse as any).init_point,
-  sandbox_init_point: (preferenceResponse as any).sandbox_init_point,
+        preferenceId: (preferenceResponse as any).id,
+        init_point: (preferenceResponse as any).init_point,
+        sandbox_init_point: (preferenceResponse as any).sandbox_init_point,
         reservationId: reservation.id
       }
     });
   } catch (error: any) {
-    // Mejor diagnóstico del error de MP
-    const mpStatus = error?.status || error?.response?.status;
-    const mpDetail = error?.message || error?.response?.data?.message || error?.response?.data?.error || JSON.stringify(error);
-    const cause = error?.cause || error?.response?.data?.cause;
+    const mpDetail = error?.message || error?.response?.data?.message || error?.response?.data?.error || 'Error desconocido';
     res.status(500).json({ message: 'Error al crear preferencia', detail: mpDetail });
   }
 }
