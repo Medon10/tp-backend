@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { MercadoPagoConfig, Preference, Payment } from 'mercadopago';
+import { MercadoPagoConfig, Preference, Payment, MerchantOrder } from 'mercadopago';
 import { orm } from '../shared/bdd/orm.js';
 import { Reservation } from '../reservation/reservation.entity.js';
 import { Flight } from '../flight/flight.entity.js';
@@ -68,16 +68,22 @@ export async function createPreference(req: Request, res: Response) {
         reservationId: reservation.id,
         flightId: flight.id
       },
-      back_urls: {
+    };
+
+    // back_urls y auto_return solo funcionan con URLs públicas (https).
+    // En desarrollo local (http://localhost) MP las rechaza, así que las omitimos.
+    if (backUrlBase.startsWith('https://')) {
+      preferenceBody.back_urls = {
         success: `${backUrlBase}/pago/resultado?status=success&reservation=${reservation.id}`,
         failure: `${backUrlBase}/pago/resultado?status=failure&reservation=${reservation.id}`,
         pending: `${backUrlBase}/pago/resultado?status=pending&reservation=${reservation.id}`
-      },
-      auto_return: 'approved'
-    };
+      };
+      preferenceBody.auto_return = 'approved';
+    }
 
-    // notification_url: la incluimos solo si el backend base es una URL válida (idealmente https)
-    if (backendBase && /^https?:\/\//i.test(backendBase)) {
+    // notification_url: solo la incluimos si el backend es HTTPS (producción).
+    // En localhost, MP no puede enviar webhooks → usamos check-status en su lugar.
+    if (backendBase.startsWith('https://')) {
       (preferenceBody as any).notification_url = `${backendBase}/api/payments/webhook`;
     }
 
@@ -96,6 +102,79 @@ export async function createPreference(req: Request, res: Response) {
   } catch (error: any) {
     const mpDetail = error?.message || error?.response?.data?.message || error?.response?.data?.error || 'Error desconocido';
     res.status(500).json({ message: 'Error al crear preferencia', detail: mpDetail });
+  }
+}
+
+/**
+ * GET /api/payments/check-status/:reservationId
+ * Busca pagos en MP con external_reference = reservationId.
+ * Si encuentra uno aprobado, actualiza la reserva a 'confirmado'.
+ * Útil porque en localhost el webhook de MP no puede llegar.
+ */
+export async function checkStatus(req: Request, res: Response) {
+  try {
+    if (!mpClient) {
+      return res.status(500).json({ message: 'Cliente Mercado Pago no inicializado.' });
+    }
+
+    const reservationId = Number(req.params.reservationId);
+    if (!reservationId) {
+      return res.status(400).json({ message: 'reservationId inválido' });
+    }
+
+    const em = orm.em.fork();
+    const reservation = await em.findOne(Reservation, { id: reservationId }, { populate: ['flight'] });
+    if (!reservation) {
+      return res.status(404).json({ message: 'Reserva no encontrada' });
+    }
+
+    // Si ya está confirmado/completado, no necesitamos consultar MP
+    if (reservation.estado === 'confirmado' || reservation.estado === 'completado') {
+      return res.status(200).json({
+        message: 'Reserva ya confirmada',
+        data: { estado: reservation.estado, paymentStatus: 'approved' }
+      });
+    }
+
+    // Buscar pagos en MP por external_reference
+    const paymentClient = new Payment(mpClient);
+    const searchResult = await paymentClient.search({
+      options: {
+        criteria: 'desc',
+        sort: 'date_created',
+      },
+      body: {
+        external_reference: String(reservationId),
+      }
+    } as any);
+
+    const results = (searchResult as any)?.results || [];
+    const approvedPayment = results.find((p: any) => p.status === 'approved');
+
+    if (approvedPayment) {
+      await confirmarReserva(reservation, em);
+        return res.status(200).json({
+        message: 'Pago confirmado',
+        data: { estado: 'confirmado', paymentStatus: 'approved' }
+      });
+    }
+
+    const rejectedPayment = results.find((p: any) => p.status === 'rejected');
+    if (rejectedPayment && results.length > 0 && !results.some((p: any) => p.status === 'pending' || p.status === 'in_process')) {
+      return res.status(200).json({
+        message: 'Pago rechazado',
+        data: { estado: reservation.estado, paymentStatus: 'rejected' }
+      });
+    }
+
+    // Aún pendiente
+    return res.status(200).json({
+      message: 'Pago pendiente',
+      data: { estado: reservation.estado, paymentStatus: results[0]?.status || 'unknown' }
+    });
+
+  } catch (error: any) {
+    res.status(500).json({ message: 'Error al verificar estado de pago', detail: error?.message });
   }
 }
 
@@ -149,23 +228,9 @@ export async function webhook(req: Request, res: Response) {
     }
 
     // Si deseamos manejar estado pendiente -> confirmado, habría que agregar "pendiente" al tipo Reservation.estado.
-    if (status === 'approved') {
-      // Solo actualizamos si no está ya confirmado/completado.
-      if (reservation.estado !== 'confirmado' && reservation.estado !== 'completado') {
-        // Reducir capacidad del vuelo aquí (en confirmación)
-        const flight = reservation.flight as any as Flight;
-        const cant = reservation.cantidad_personas || 1;
-        if (flight.capacidad_restante >= cant) {
-          flight.capacidad_restante -= cant;
-        } else {
-          console.warn(`Capacidad insuficiente al confirmar reserva ${reservation.id}.`);
-          // Aún confirmamos la reserva para no perder el pago, pero logueamos alerta.
-        }
-        reservation.estado = 'confirmado';
-        reservation.updatedAt = new Date();
-        await em.flush();
-      }
-    } else if (status === 'rejected') {
+    if ((payment as any).status === 'approved') {
+      await confirmarReserva(reservation, em);
+    } else if ((payment as any).status === 'rejected') {
       // Marcamos como cancelado si fue rechazado
       if (reservation.estado === 'pendiente') {
         reservation.estado = 'cancelado';
@@ -174,8 +239,22 @@ export async function webhook(req: Request, res: Response) {
       }
     }
 
-    res.status(200).json({ message: 'Webhook procesado', paymentStatus: status });
+    res.status(200).json({ message: 'Webhook procesado', paymentStatus: (payment as any).status });
   } catch (error: any) {
     res.status(500).json({ message: 'Error procesando webhook', error: error.message });
   }
+}
+
+async function confirmarReserva(reservation: Reservation, em:any) {
+  if (reservation.estado !== 'pendiente') return;
+
+  const flight = reservation.flight as any as Flight;
+  const cant = reservation.cantidad_personas || 1;
+
+  if (flight.capacidad_restante >= cant) {
+    flight.capacidad_restante -= cant;
+  }
+  reservation.estado = 'confirmado';
+  reservation.updatedAt = new Date();
+  await em.flush();
 }
