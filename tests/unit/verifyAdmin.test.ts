@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Request, Response, NextFunction } from 'express';
-import { verifyAdmin } from './verifyAdmin'; // Ajusta la importación según cómo lo exportes
+import { verifyAdmin } from '../../src/shared/middleware/verifyAdmin'; // Ajusta la importación según cómo lo exportes
 
 describe('verifyAdmin Middleware', () => {
   let mockRequest: Partial<Request>;
