@@ -1,19 +1,12 @@
 import { Router } from "express";
-import { findAll, findOne, signup, update, remove, login, getProfile, logout } from "./user.controller.js";
+import { findAll, findOne, signup, update, remove, login, getProfile, logout, getUserStats, updateProfile } from "./user.controller.js";
 import { sanitizeUserInput } from "../shared/middleware/sanitizeUsers.js";
 import {sanitizeLoginInput} from "../shared/middleware/sanitizeLogin.js"
 import { verifyToken } from "../shared/middleware/verifytoken.js";
+import { verifyAdmin } from "../shared/middleware/verifyAdmin.js";
 
 export const userRouter = Router()
 
-// Manejar explícitamente las requests OPTIONS para /login
-userRouter.options('/login', (req, res) => {
-  res.header('Access-Control-Allow-Origin', 'http://localhost:5173');
-  res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.status(200).end();
-});
 //ruta de prueba
 userRouter.get("/test", (req, res) => {
   res.json({ 
@@ -26,14 +19,19 @@ userRouter.post("/login", sanitizeLoginInput, login); // login de usuario
 userRouter.post("/signup", sanitizeUserInput, signup); // registrar usuario
 userRouter.post("/logout", logout); // logout de usuario
 
+// Rutas del perfil del usuario autenticado (ANTES de /:id para evitar que Express capture "profile" como id)
+userRouter.get("/profile/me", verifyToken, getProfile);
+userRouter.get('/profile/stats', verifyToken, getUserStats);
+userRouter.put('/profile/update', verifyToken, sanitizeUserInput, updateProfile);
+
 // Rutas privadas
 userRouter.get("/", verifyToken, findAll);
 userRouter.get("/:id", verifyToken, findOne);
-userRouter.get("/profile/me", verifyToken, getProfile); // devuelve el perfil del usuario autenticado
 
-userRouter.put("/:id", verifyToken, sanitizeUserInput, update);
-userRouter.patch("/:id", verifyToken, sanitizeUserInput, update);
-userRouter.delete("/:id", verifyToken, remove);
+// Rutas de admin — solo administradores pueden modificar/eliminar usuarios por ID
+userRouter.put("/:id", verifyToken, verifyAdmin, sanitizeUserInput, update);
+userRouter.patch("/:id", verifyToken, verifyAdmin, sanitizeUserInput, update);
+userRouter.delete("/:id", verifyToken, verifyAdmin, remove);
 
 
 export default userRouter;

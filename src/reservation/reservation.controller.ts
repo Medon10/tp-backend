@@ -2,7 +2,9 @@ import {Request, Response, NextFunction} from "express"
 import { orm } from '../shared/bdd/orm.js'
 import { Reservation } from "./reservation.entity.js"
 import { User } from "../user/user.entity.js";
-//si importo Flight se da una dependencia circular y no compila
+import { Flight } from "../flight/flight.entity.js"; 
+import { LockMode } from "@mikro-orm/core"; 
+import { calcularPrecio } from "../shared/utils/precio.js";
 
 async function findAll (req:Request, res:Response) {
     try {
@@ -29,143 +31,87 @@ async function findOne(req: Request, res: Response) {
 }
 
 async function add(req: Request, res: Response) {
-    try {
-        const em = orm.em.fork();
-        
-        console.log('=== DEBUG RESERVA CREATION ===');
-        console.log('Body original:', req.body);
-        console.log('Sanitized input:', req.body.sanitizedInput);
-        
-        // Extraer IDs de relaciones del input sanitizado 
-        const { 
-            flight_id, 
-            usuario_id, 
-            ...reservationData 
-        } = req.body.sanitizedInput || req.body;
-        
-        console.log('IDs extraídos:', { flight_id, usuario_id });
-        console.log('Datos de la reserva:', reservationData);
-        
-        // Validar que todos los IDs requeridos estén presentes
-        const missingIds = [];
-        if (!flight_id) missingIds.push('flight_id');  
-        if (!usuario_id) missingIds.push('usuario_id');
-        
-        if (missingIds.length > 0) {
-            return res.status(400).json({
-                message: 'Error al crear reserva',
-                error: `IDs requeridos faltantes: ${missingIds.join(', ')}`,
-                receivedData: req.body.sanitizedInput || req.body
-            });
-        }
+  try {
+    const em = orm.em.fork();
+    const userId = (req as any).user.id;
+    const { flight_id, cantidad_personas } = req.body.sanitizedInput;
 
-        // Cargar entidades relacionadas en paralelo  
-        const [flight, usuario] = await Promise.all([
-            // Cargar el flight con su destino relacionado
-            em.findOne('Flight', flight_id, { 
-                populate: ['destino'] 
-            }),
-            em.findOne(User, usuario_id)
-        ]);
-
-        console.log('Entidades encontradas:');
-        console.log('- Flight:', flight ? `ID: ${(flight as any).id}` : 'NO ENCONTRADO');
-        console.log('- Destino del vuelo:', flight ? `${(flight as any).destino?.nombre}` : 'NO DISPONIBLE');
-        console.log('- Usuario:', usuario ? `ID: ${usuario.id}` : 'NO ENCONTRADO');
-
-        // Validar existencia individual con mensajes específicos
-        if (!flight) {
-            return res.status(400).json({
-                message: 'Error al crear reserva',
-                error: `Vuelo con ID ${flight_id} no encontrado`,
-                field: 'flight_id'
-            });
-        }
-
-        if (!usuario) {
-            return res.status(400).json({
-                message: 'Error al crear reserva',
-                error: `Usuario con ID ${usuario_id} no encontrado`,
-                field: 'usuario_id'
-            });
-        }
-
-        // Verificar que el vuelo tenga un destino asignado
-        if (!(flight as any).destino) {
-            return res.status(400).json({
-                message: 'Error al crear reserva',
-                error: `El vuelo con ID ${flight_id} no tiene un destino asignado`,
-                field: 'flight_id'
-            });
-        }
-
-        //aca podria haber validaciones de negocio ej: fecha de reserva > hoy
-        console.log('Todas las entidades válidas, creando reserva...');
-
-        const now = new Date();
-        const reservation = em.create(Reservation, {
-            fecha_reserva: reservationData.fecha_reserva,
-            valor_reserva: reservationData.valor_reserva,
-            estado: reservationData.estado || 'pendiente', // Estado por defecto
-            flight: em.getReference('Flight', flight_id),
-            usuario: em.getReference(User, usuario_id),
-            createdAt: now,
-            updatedAt: now
-        });
-
-        console.log('Reserva creada en memoria:', {
-            fecha_reserva: reservation.fecha_reserva,
-            valor_reserva: reservation.valor_reserva,
-            estado: reservation.estado
-        });
-
-        // Persistir en base de datos
-        await em.flush();
-
-        console.log('Reserva persistida exitosamente con ID:', reservation.id);
-
-        // Preparar respuesta con datos completos (incluyendo destino del vuelo)
-        const response = {
-            message: 'Reserva creada exitosamente',
-            data: {
-                id: reservation.id,
-                fecha_reserva: reservation.fecha_reserva,
-                valor_reserva: reservation.valor_reserva,
-                estado: reservation.estado,
-                relaciones: {
-                    destino: {
-                        id: (flight as any).destino.id,
-                        nombre: (flight as any).destino.nombre 
-                    },
-                    flight: {
-                        id: (flight as any).id,
-                        origen: (flight as any).origen,
-                        aerolinea: (flight as any).aerolinea,
-                        fechahora_salida: (flight as any).fechahora_salida,
-                        fechahora_llegada: (flight as any).fechahora_llegada
-                    },
-                    usuario: {
-                        id: usuario.id,
-                        nombre: usuario.nombre,
-                    }
-                },
-                timestamps: {
-                    createdAt: reservation.createdAt,
-                    updatedAt: reservation.updatedAt
-                }
-            }
-        };
-
-        res.status(201).json(response);
-
-    } catch (error) {
-        console.error('=== ERROR EN RESERVATION CREATION ===');
-        console.error('Error completo:', error);
-        if (error instanceof Error) {
-            console.error('Stack trace:', error.stack);
-        }
-        res.status(500).json({ message: 'Error al crear reserva', error });
+    // Validaciones
+    if (!flight_id || !cantidad_personas) {
+      return res.status(400).json({
+        message: 'ID de vuelo y cantidad de personas son requeridos'
+      });
     }
+
+    if (cantidad_personas < 1 || cantidad_personas > 10) {
+      return res.status(400).json({
+        message: 'La cantidad de personas debe estar entre 1 y 10'
+      });
+    }
+
+    // Verificar que el vuelo existe
+    const flight = await em.findOne(
+      Flight,
+      { id: flight_id },
+      { populate: ['destino'] }
+    );
+
+    if (!flight) {
+      return res.status(404).json({ message: 'Vuelo no encontrado' });
+    }
+
+    // Verificar disponibilidad
+    if (flight.capacidad_restante < cantidad_personas) {
+      return res.status(400).json({
+        message: `No hay suficientes asientos disponibles. Quedan ${flight.capacidad_restante} asientos.`
+      });
+    }
+
+    // Verificar que el vuelo sea futuro
+    const fechaVuelo = new Date(flight.fechahora_salida);
+    if (fechaVuelo < new Date()) {
+      return res.status(400).json({
+        message: 'No se puede reservar un vuelo que ya partió'
+      });
+    }
+
+
+    const precioCalc = calcularPrecio(flight, flight.origen, cantidad_personas);
+    const precio_total = precioCalc.precioTotal; 
+
+    // Crear reserva (pendiente de pago)
+    const reservation = em.create(Reservation, {
+      usuario: em.getReference(User, userId),
+      flight: flight,
+      cantidad_personas,
+      valor_reserva: precio_total,
+      estado: 'pendiente',
+      fecha_reserva: new Date().toISOString(),
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+
+    await em.flush();
+
+    res.status(201).json({
+      message: 'Reserva creada exitosamente',
+      data: {
+        id: reservation.id,
+        vuelo: {
+          id: flight.id,
+          origen: flight.origen,
+          destino: flight.destino.nombre,
+          fecha_salida: flight.fechahora_salida
+        },
+        cantidad_personas: reservation.cantidad_personas,
+        precio_total: reservation.valor_reserva,
+        estado: reservation.estado
+      }
+    });
+
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
 }
 
 async function findUserReservations(req: Request, res: Response) {
@@ -173,36 +119,60 @@ async function findUserReservations(req: Request, res: Response) {
     const em = orm.em.fork();
     const userId = (req as any).user.id;
 
+ // 1. La consulta ahora carga todas las relaciones anidadas que necesitamos.
     const reservations = await em.find(
       Reservation,
       { usuario: userId },
       { 
-        populate: ['flight', 'flight.destino', 'usuario'],
-        orderBy: { fecha_reserva: 'DESC' }
+        populate: ['flight.destino'], 
+        orderBy: { createdAt: 'DESC' }
       }
     );
 
-
-    // Clasificar reservas por estado y fecha
+    // 2. Mapeamos manualmente los datos para crear un objeto limpio y seguro para el frontend.
     const now = new Date();
-    const classified = reservations.map(reservation => {
-      const fechaVuelo = new Date((reservation.flight as any).fechahora_salida);
+    const responseData = reservations.map(reservation => {
+      // Casteamos para poder acceder a las propiedades cargadas
+      const flight = reservation.flight as any;
+
+      // Si por alguna razón una reserva no tiene vuelo o destino, la ignoramos para evitar errores.
+      if (!flight || !flight.destino) {
+        return null;
+      }
+
+      const fechaVuelo = new Date(flight.fechahora_salida);
       const isPast = fechaVuelo < now;
       
+      // Creamos el objeto con la estructura exacta que el frontend espera.
       return {
-        ...reservation,
-        isPast,
-        canCancel: !isPast && reservation.estado !== 'cancelado' && reservation.estado !== 'completado'
+        id: reservation.id,
+        fecha_reserva: reservation.fecha_reserva,
+        valor_reserva: reservation.valor_reserva,
+        estado: reservation.estado,
+        cantidad_personas: reservation.cantidad_personas,
+        isPast: isPast,
+        canCancel: !isPast && reservation.estado !== 'cancelado' && reservation.estado !== 'completado',
+        flight: {
+          id: flight.id,
+          origen: flight.origen,
+          fechahora_salida: flight.fechahora_salida,
+          fechahora_llegada: flight.fechahora_llegada,
+          aerolinea: flight.aerolinea,
+          destino: {
+            id: flight.destino.id,
+            nombre: flight.destino.nombre,
+            imagen: flight.destino.imagen
+          }
+        }
       };
-    });
+    }).filter(Boolean);
 
     res.status(200).json({
       message: 'Reservas encontradas',
-      cantidad: classified.length,
-      data: classified
+      cantidad: responseData.length,
+      data: responseData
     });
   } catch (error: any) {
-    console.error('Error al obtener reservas:', error);
     res.status(500).json({ message: error.message });
   }
 }
@@ -281,9 +251,8 @@ async function cancelReservation(req: Request, res: Response) {
       data: reservation
     });
   } catch (error: any) {
-    console.error('Error al cancelar reserva:', error);
     res.status(500).json({ message: error.message });
   }
 }
 
-export { findAll, findOne, add, update, remove, findUserReservations, cancelReservation }
+export { findAll, findOne, add, update, remove, findUserReservations, cancelReservation };

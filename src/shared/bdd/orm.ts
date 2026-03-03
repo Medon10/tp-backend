@@ -5,13 +5,9 @@ import { MySqlDriver } from '@mikro-orm/mysql';
 export const orm = await MikroORM.init({
     entities: ['dist/**/*.entity.js'],
     entitiesTs: ['src/**/*.entity.ts'],
-    dbName: 'VuelosApp',
     driver: MySqlDriver,
-    host: 'localhost',
-    user: 'root',
-    password : "1234",
-    highlighter: new SqlHighlighter(),
-    debug: true,
+    clientUrl: process.env.DB_URL || '',
+    debug: false,
     schemaGenerator: { //nunca en producción, solo desarrollo
         disableForeignKeys: true,
         createForeignKeyConstraints: true,
@@ -23,6 +19,6 @@ export const syncSchema = async () => {
     const generator = orm.getSchemaGenerator();
     /*await generator.createSchema();
     //await generator.dropSchema();*/
-    //  await generator.updateSchema({safe: true});
+    //await generator.updateSchema({safe: true});
     console.log('Esquema actualizado');
 }

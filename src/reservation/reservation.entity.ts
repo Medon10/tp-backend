@@ -15,6 +15,9 @@ export class Reservation extends BaseEntity {
     @Property()
     estado!: 'pendiente' | 'confirmado' | 'cancelado' | 'completado';
 
+    @Property({ nullable: true })
+    cantidad_personas?: number;
+
     @ManyToOne(() => User)
     usuario!: User;
 
