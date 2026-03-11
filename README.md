@@ -29,6 +29,54 @@ Ver todas las variables de entorno y la guía completa de instalación en [docs/
 - [Integración de pagos](docs/payments.md) — Flujo de Mercado Pago
 - [Propuesta del TP](docs/proposal.md) — Alcance y definición del proyecto
 
+## Evidencia de Tests
+
+Estado actual de evidencia automática:
+
+- Unit tests backend: `tests/unit/precio.test.ts`, `tests/unit/verifyAdmin.test.ts`
+- Integration tests backend: `tests/integration/destinies.test.ts`
+
+Ultima ejecucion local registrada (11/03/2026):
+
+- `3` archivos de test aprobados
+- `31` tests aprobados
+
+Comandos para volver a generar evidencia:
+
+```bash
+npm test -- --run
+```
+
+> Sugerencia para defensa: agregar captura de consola o pipeline CI en `docs/evidencia-tests/` y linkearla desde esta seccion.
+
+## Credenciales de Prueba
+
+Completar con credenciales reales del deploy:
+
+| Rol | Email | Contraseña | Estado |
+|-----|-------|------------|--------|
+| Admin | COMPLETAR | COMPLETAR | Pendiente |
+| Cliente | COMPLETAR | COMPLETAR | Pendiente |
+
+Mientras tanto, para entorno local:
+
+- Cliente: registrar usuario desde frontend (`/register`).
+- Admin: registrar usuario y cambiar `rol` a `admin` en la base de datos.
+
+## Video Demo
+
+Link del video de funcionamiento (pendiente de carga):
+
+- COMPLETAR (YouTube no listado o Google Drive)
+
+## Gestión del Proyecto
+
+Seccion reservada para evidencia de gestion (a completar por el equipo):
+
+- Metodologia utilizada: COMPLETAR (Scrum, Kanban, XP, hibrida)
+- Minutas de reuniones: COMPLETAR (link a markdown/pdf/doc compartido)
+- Tracking de tareas: COMPLETAR (GitHub Projects, Trello, Jira, etc.)
+
 ## Arquitectura
 
 ```

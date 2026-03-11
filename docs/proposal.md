@@ -28,21 +28,3 @@ Regularidad:
 |CRUD dependiente|1. CRUD Reseva {depende de} CRUD usuario y CRUD Vuelo<br>
 |Listado<br>+<br>detalle| 1. Listado de vuelos filtrado por presupuesto, cantidad de personas, fecha de salida, ciudad de origen. Muestra vuelos disponibles con: Destino, valor del vuelo,fecha de salida, duracion del vuelo, actividades, transportes <br> 2. Listado de favoritos, muestra los viajes que el usuario haya guardado en favoritos. <br> 3. Listado de Reservas: muestra los vuelos de las reservas que haya realizado el usuario.
 |CUU/Epic|1. Reservar un vuelo<br>|
-
-
-Adicionales para Aprobación
-|Req|Detalle|
-|:-|:-|
-|CRUD |1. CRUD usuario<br>2. CRUD destino<br>3. CRUD vuelo.<br> CRUD favorito<br> 4. CRUD reserva <br> 5. CRUD avion <br>
-|CUU/Epic|1. Reservar un vuelo<br>2. Pagar el vuelo<br>
-
-
-### Alcance Adicional Voluntario
-
-*Nota*: El Alcance Adicional Voluntario es opcional, pero ayuda a que la funcionalidad del sistema esté completa y será considerado en la nota en función de su complejidad y esfuerzo.
-
-|Req|Detalle|
-|:-|:-|
-|Listados |-|
-|CUU/Epic|1.  <br>|
-|Otros|1. |
