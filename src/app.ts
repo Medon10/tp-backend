@@ -15,7 +15,7 @@ import { destinyRouter } from './destiny/destiny.routes.js';
 import { favoriteRouter } from './favorite/favorite.routes.js';
 import { paymentRouter } from './payment/payment.routes.js';
 
-const app = express();
+export const app = express();
 const PORT = 3000;
 
 app.disable('x-powered-by');
@@ -72,10 +72,13 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 });
 
 
-syncSchema().then(() => {
-  app.listen(PORT, () => {
-    console.log(`Servidor corriendo en http://localhost:${PORT}`);
+// Iniciar servidor solo cuando se ejecuta directamente (no al importar para tests)
+if (process.argv[1] === __filename) {
+  syncSchema().then(() => {
+    app.listen(PORT, () => {
+      console.log(`Servidor corriendo en http://localhost:${PORT}`);
+    });
+  }).catch((error) => {
+    console.error('Error al iniciar el servidor:', error);
   });
-}).catch((error) => {
-  console.error('Error al iniciar el servidor:', error);
-});
+}
