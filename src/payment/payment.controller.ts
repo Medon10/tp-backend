@@ -45,7 +45,7 @@ export async function createPreference(req: Request, res: Response) {
     const items = [
       {
         id: `reservation-${reservation.id}`,
-        title: `Reserva vuelo ${flight.id} a ${flight.destino?.nombre || ''}`,
+        title: `Reserva vuelo a ${flight.destino?.nombre || ''}`,
         description: `Reserva para ${reservation.cantidad_personas || 1} pasajero(s)`,
         quantity: 1,
         unit_price: reservation.valor_reserva,
