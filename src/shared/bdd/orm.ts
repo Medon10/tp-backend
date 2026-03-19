@@ -4,7 +4,23 @@ import { MySqlDriver } from '@mikro-orm/mysql';
 
 const shouldUseTls = process.env.DB_SSL !== 'false';
 const rejectUnauthorized = process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false';
-const caCert = process.env.DB_SSL_CA?.replace(/\\n/g, '\n');
+
+const normalizeCaCert = (rawCert: string | undefined): string | undefined => {
+    if (!rawCert) return undefined;
+
+    const normalized = rawCert.replace(/\\n/g, '\n').trim();
+    if (!normalized) return undefined;
+
+    // Accept both full PEM and plain base64 body.
+    if (normalized.includes('BEGIN CERTIFICATE')) {
+        return normalized;
+    }
+
+    const chunks = normalized.match(/.{1,64}/g) ?? [normalized];
+    return `-----BEGIN CERTIFICATE-----\n${chunks.join('\n')}\n-----END CERTIFICATE-----`;
+};
+
+const caCert = normalizeCaCert(process.env.DB_SSL_CA);
 
 export const orm = await MikroORM.init({
     entities: ['dist/**/*.entity.js'],
