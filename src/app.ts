@@ -15,7 +15,7 @@ import { favoriteRouter } from './favorite/favorite.routes.js';
 import { paymentRouter } from './payment/payment.routes.js';
 
 export const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 app.disable('x-powered-by');
 
