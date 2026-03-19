@@ -6,7 +6,7 @@
 |---------|---------|
 | **Base URL** | `http://localhost:3000/api` |
 | **Formato** | JSON (`Content-Type: application/json`) |
-| **Autenticación** | JWT vía cookie httpOnly (`token`) o header `Authorization: Bearer <token>` |
+| **Autenticación** | JWT vía header `Authorization: Bearer <token>` |
 | **Roles** | `cliente` (por defecto) · `admin` |
 
 ---
@@ -16,9 +16,8 @@
 ### Cómo funciona
 
 1. El usuario hace `POST /api/users/login` con email y contraseña.
-2. El backend valida las credenciales y devuelve un **JWT** en:
-   - Una **cookie httpOnly** llamada `token` (1 hora de expiración).
-   - El campo `token` del body de la respuesta (como fallback).
+2. El backend valida las credenciales y devuelve un **JWT** en el campo `token` del body (expiración: 1 hora).
+3. El frontend guarda el token en `localStorage` (`auth_token`) y lo envía como `Authorization: Bearer <token>`.
 3. Las rutas protegidas verifican el token mediante el middleware `verifyToken`.
 4. Las rutas de administrador agregan el middleware `verifyAdmin` que verifica `rol === 'admin'`.
 
@@ -483,7 +482,7 @@
     "password": "micontraseña"
   }
   ```
-- **Descripción:** Autentica al usuario. Devuelve JWT en el body y lo setea como cookie httpOnly (1h de expiración). La cookie se configura con `SameSite=None; Secure` en producción.
+- **Descripción:** Autentica al usuario y devuelve JWT en el body (expiración: 1 hora).
 - **Respuesta exitosa (200):**
   ```json
   {
@@ -531,14 +530,6 @@
 - **Errores:**
   - `400` — `"Email es requerido"` / `"Contraseña es requerida"` / `"Formato de email inválido"` / `"La contraseña debe tener al menos 6 caracteres"`
   - `409` — `"Este email ya está registrado"`
-
----
-
-#### `POST /api/users/logout` — Cerrar sesión
-
-- **Autenticación:** Ninguna
-- **Descripción:** Limpia la cookie `token`.
-- **Respuesta exitosa (200):** `{ "message": "Logout exitoso" }`
 
 ---
 

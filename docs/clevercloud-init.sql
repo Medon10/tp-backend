@@ -113,15 +113,7 @@ UNLOCK TABLES;
 LOCK TABLES `users` WRITE;
 INSERT INTO `users` VALUES 
 (1,'Juampi','Binomio','juanbinomio@gmail.com','jb01011001','5434150654','2025-08-10','2025-08-10','cliente'),
-(2,'Kevin','Dolver','kevindovler888@gmail.com','kd05052005','54341509973','2025-08-10','2025-08-10','cliente'),
-(3,'Placeholder','User','placeholder@example.com','$2b$10$c67//sObLPNRxEV27rt06O5hGvFbQxDdeVMLAZpvw4FEYPxTLpKb.','0000000000','2025-08-11','2025-08-11','cliente'),
-(4,'Nicolas','Muzzio','Nicogmuzz@gmail.com','ngm19980202','6723544532','2025-08-13','2025-08-13','cliente'),
-(5,'Gerardo','Ballesteros','Balle@gmail.com','gcb20050109','2473505099','2025-08-14','2025-08-14','cliente'),
-(6,'Medon','Tusa','zukueasy@gmail.com','$2b$10$c67//sObLPNRxEV27rt06O5hGvFbQxDdeVMLAZpvw4FEYPxTLpKb.','2473522088','2025-09-17','2025-10-15','admin'),
-(11,'Juan','Armendares','juanarmen@hotmail.com','$2b$10$ipD1CFFDSpQEnSMzV0jSHereu7SHKvZj83vbEFgaDayJgSvzSIEVS',NULL,'2025-09-20','2025-09-20','cliente'),
-(12,'Mateo','Medón','mateomedonn@gmail.com','$2b$10$vOMu7/2Ni7BFXmUfqLi7Du0W7uGZPYfDN4BxtG//GB5TNtI7SPssm',NULL,'2025-10-15','2025-10-15',NULL),
-(13,'propuesta','Medón','mateom222edonn@gmail.com','$2b$10$5wAi8CZOHa0gQHTdh6QWD.ehCmRIArc7GHPWD9eK0.yd7I9yewXFC',NULL,'2025-10-15','2025-10-15',NULL),
-(14,'propuesta','Medón','jartigau@simplemak.com.ar','$2b$10$sD1nvQ8cXuY0PWMPDAg25.HTtOybGDDdP/Xfr2sRH3eFGtxHY7QjS',NULL,'2025-10-15','2025-10-15',NULL);
+(2,'Kevin','Dolver','kevindovler888@gmail.com','kd05052005','54341509973','2025-08-10','2025-08-10','cliente');
 UNLOCK TABLES;
 
 LOCK TABLES `flights` WRITE;
@@ -181,21 +173,6 @@ INSERT INTO `flights` VALUES
 (54,'2026-10-15 10:00:00','2026-10-15 23:00:00',780,'Emirates',300,2100,'Kino Der Toten',5,'2025-10-05 02:50:00','2025-10-14 02:10:38',285,NULL);
 UNLOCK TABLES;
 
-LOCK TABLES `reservations` WRITE;
-INSERT INTO `reservations` VALUES 
-(3,'2025-12-08',700,'pendiente',3,3,'2025-08-12 03:00:00','2025-08-12 03:00:00'),
-(4,'2022-01-08',250,'completado',4,4,'2025-08-13 03:00:00','2025-08-13 03:00:00'),
-(5,'2029-01-09',350,'completado',5,5,'2025-08-14 03:00:00','2025-08-14 03:00:00'),
-(6,'2021-03-02',450,'completado',1,2,'2025-09-09 03:00:00','2025-09-09 03:00:00'),
-(8,'2025-10-07',400,'cancelado',6,54,'2025-10-08 13:25:16','2025-10-14 02:39:18'),
-(9,'2025-12-07',200,'completado',6,22,'2025-10-08 13:27:10','2025-10-08 13:27:10'),
-(10,'2025-10-15',500,'cancelado',6,2,'2025-10-15 18:32:03','2025-10-15 19:57:27');
-UNLOCK TABLES;
-
-LOCK TABLES `favorites` WRITE;
-INSERT INTO `favorites` VALUES 
-(9,'2025-10-13','2025-10-13',19,6);
-UNLOCK TABLES;
 
 SET SQL_MODE=@OLD_SQL_MODE;
 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;

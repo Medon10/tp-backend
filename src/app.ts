@@ -1,7 +1,6 @@
 import 'reflect-metadata';
 import 'dotenv/config';
 import express from 'express';
-import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -20,8 +19,6 @@ const PORT = 3000;
 
 app.disable('x-powered-by');
 
-app.use(cookieParser());
-
 // CORS configuration (allow list). Use env FRONTEND_ORIGINS (comma separated) in prod.
 const defaultOrigins = [
   'http://localhost:5173',
@@ -38,7 +35,6 @@ app.use(cors({
     if (allowedOrigins.includes(origin)) return callback(null, true);
     return callback(new Error(`Not allowed by CORS: ${origin}`));
   },
-  credentials: true,
 }));
 
 app.use(express.json());

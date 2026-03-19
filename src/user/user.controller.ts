@@ -71,15 +71,6 @@ async function login(req: Request, res: Response) {
       JWT_SECRET, 
       { expiresIn: "1h" }
     );
-
-    // Configurar cookie con el token (ajustada para cross-site en producción)
-    const isProd = process.env.NODE_ENV === 'production';
-    res.cookie('token', token, {
-      httpOnly: true,
-      secure: isProd, // requerido para SameSite=None
-      sameSite: isProd ? 'none' : 'lax',
-      maxAge: 3600000, // 1 hora
-    });
     const { password: _, ...userWithoutPassword } = user;
     
   res.status(200).json({ message: "Login exitoso", user: userWithoutPassword, token });
@@ -142,16 +133,6 @@ async function remove(req:Request, res: Response) {
     catch(error: any){
         res.status(500).json({message: error.message})    
     }
-}
-
-async function logout(req: Request, res: Response) {
-  const isProd = process.env.NODE_ENV === 'production';
-  res.clearCookie('token', {
-    httpOnly: true,
-    secure: isProd,
-    sameSite: isProd ? 'none' : 'lax',
-  });
-  res.status(200).json({ message: "Logout exitoso" });
 }
 
 async function getUserStats(req: Request, res: Response) {
@@ -285,4 +266,4 @@ async function updateProfile(req: Request, res: Response) {
   }
 }
 
-export { findAll, findOne, add, update, remove, login, getProfile, signup, logout, getUserStats, updateProfile };
+export { findAll, findOne, add, update, remove, login, getProfile, signup, getUserStats, updateProfile };
