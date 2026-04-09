@@ -71,11 +71,9 @@ Link del video de funcionamiento (pendiente de carga):
 
 ## Gestión del Proyecto
 
-Seccion reservada para evidencia de gestion (a completar por el equipo):
 
-- Metodologia utilizada: COMPLETAR (Scrum, Kanban, XP, hibrida)
-- Minutas de reuniones: COMPLETAR (link a markdown/pdf/doc compartido)
-- Tracking de tareas: COMPLETAR (GitHub Projects, Trello, Jira, etc.)
+- Minutas de reuniones: [Minutas](docs/minutas.md)
+- Commits realizados por los integrantes: [Commits](docs/commits.md)
 
 ## Arquitectura
 
