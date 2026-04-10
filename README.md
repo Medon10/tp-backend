@@ -47,27 +47,11 @@ Comandos para volver a generar evidencia:
 npm test -- --run
 ```
 
-> Sugerencia para defensa: agregar captura de consola o pipeline CI en `docs/evidencia-tests/` y linkearla desde esta seccion.
-
-## Credenciales de Prueba
-
-Completar con credenciales reales del deploy:
-
-| Rol | Email | Contraseña | Estado |
-|-----|-------|------------|--------|
-| Admin | COMPLETAR | COMPLETAR | Pendiente |
-| Cliente | COMPLETAR | COMPLETAR | Pendiente |
-
-Mientras tanto, para entorno local:
-
-- Cliente: registrar usuario desde frontend (`/register`).
-- Admin: registrar usuario y cambiar `rol` a `admin` en la base de datos.
-
 ## Video Demo
 
-Link del video de funcionamiento (pendiente de carga):
+Link del video de funcionamiento:
 
-- COMPLETAR (YouTube no listado o Google Drive)
+- [Video:](https://youtu.be/RlsM4P7Biyc)
 
 ## Gestión del Proyecto
 
