@@ -51,7 +51,7 @@ npm test -- --run
 
 Link del video de funcionamiento:
 
-- [Video:](https://youtu.be/RlsM4P7Biyc)
+- [Ver Video Demo](https://youtu.be/RlsM4P7Biyc)
 
 ## Gestión del Proyecto
 
