@@ -1,77 +1,75 @@
-1. Instrucciones de Instalación y Puesta en Marcha
-Para ejecutar el proyecto completo, es necesario levantar dos servidores de manera simultánea: el Backend (maneja la lógica y la base de datos) y el Frontend (la interfaz de usuario que ves en el navegador).
+# Instalación y puesta en marcha
 
-A. Backend (tp-backend)
+Para ejecutar el proyecto es necesario levantar dos servidores simultáneamente: el **backend** (lógica y base de datos) y el **frontend** (interfaz de usuario).
 
-Requisitos Previos:
+---
 
-Node.js (versión 18 o superior)
+## A. Backend (`tp-backend`)
 
-NPM (generalmente se instala con Node.js)
+### Requisitos previos
+- Node.js v18 o superior
+- NPM (se instala junto con Node.js)
+- Un servidor MySQL corriendo
 
-Un servidor de base de datos MySQL.
-Pasos de Instalación:
+### Pasos
 
-Clonar el Repositorio:
-
-Terminal
-
+**1. Clonar el repositorio**
+```bash
 git clone https://github.com/Medon10/tp-backend.git
 cd tp-backend
-Instalar Dependencias:
-Este comando descarga todas las librerías necesarias para el proyecto.
+```
 
-Terminal
-
+**2. Instalar dependencias**
+```bash
 npm install
-Configurar la Base de Datos:
+```
 
-Asegúrate de que tu servidor MySQL esté corriendo.
+**3. Configurar la base de datos**
+- Asegurate de que tu servidor MySQL esté corriendo
+- Creá una base de datos llamada `VuelosApp`
+- Ejecutá los comandos del archivo `docs/mysql-commands.sql` para crear las tablas
 
-Crea una nueva base de datos llamada VuelosApp.
+**4. Crear el archivo de entorno**
 
-Ejecuta los comandos del archivo docs/mysql-commands.sql para crear las tablas (users, flights, destinies, etc.).
+Copiá el archivo de ejemplo y completá las variables con tus datos:
+```bash
+cp .env.example .env
+```
 
-Crear el Archivo de Entorno (.env):
-
-En la raíz del proyecto tp-backend, crea un archivo llamado .env.
-
-Añade la siguiente línea para la clave secreta de autenticación:
-
-TOKEN_SECRET=unaclavesecretamuydificildeadivinar12345
-Iniciar el Servidor:
-
-Terminal
-
+**5. Iniciar el servidor**
+```bash
 npm run dev
-Si todo va bien, verás en la terminal el mensaje: Servidor corriendo en http://localhost:3000.
+```
 
-B. Frontend (tp-frontend)
-El frontend es la aplicación de React que los usuarios ven y con la que interactúan.
+ Si todo va bien, verás en la terminal: `Servidor corriendo en http://localhost:3000`
 
-Requisitos Previos:
+---
 
-Node.js (versión 18 o superior)
+## B. Frontend (`tp-frontend`)
 
-NPM
+### Requisitos previos
+- Node.js v18 o superior
+- NPM
 
-Pasos de Instalación:
+### Pasos
 
-Clonar el Repositorio:
-
-Terminal
-
+**1. Clonar el repositorio**
+```bash
 git clone https://github.com/Medon10/tp-frontend.git
 cd tp-frontend
-Instalar Dependencias:
+```
 
-Terminal
-
+**2. Instalar dependencias**
+```bash
 npm install
-Iniciar el Servidor de Desarrollo:
-Importante: Asegurarse de que el servidor del backend ya esté corriendo.
+```
 
-Terminal
+**3. Iniciar el servidor de desarrollo**
 
+> Asegurate de que el servidor del backend ya esté corriendo antes de este paso.
+
+```bash
 npm run dev
-La aplicación se abre automáticamente en el navegador en http://localhost:5173.
+```
+
+✅ La aplicación estará disponible en `http://localhost:5173`

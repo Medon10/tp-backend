@@ -223,16 +223,14 @@ async function buscarVuelos(req: Request, res: Response) {
     };
 
     if (fecha_salida) {
-      const fechaBusqueda = new Date(fecha_salida);
-      const fechaInicio = new Date(fechaBusqueda);
-      fechaInicio.setHours(0, 0, 0, 0);
-      const fechaFin = new Date(fechaBusqueda);
-      fechaFin.setHours(23, 59, 59, 999);
+      const fechaBusqueda = new Date(fecha_salida + 'T00:00:00');
+      const fechaInicio = fecha_salida + ' 00:00:00';
+      const fechaFin = fecha_salida + ' 23:59:59';
 
-      queryConditions.fechahora_salida = {
-        $gte: fechaInicio.toISOString(),
-        $lte: fechaFin.toISOString()
-      };
+queryConditions.fechahora_salida = {
+  $gte: fechaInicio,
+  $lte: fechaFin
+};
     } else {
       queryConditions.fechahora_salida = { $gte: new Date().toISOString() };
     }
