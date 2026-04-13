@@ -1,4 +1,4 @@
-import { Entity, Property, ManyToOne, OneToMany, Collection } from '@mikro-orm/core';
+import { Entity, Property, ManyToOne, OneToMany, Collection, Cascade } from '@mikro-orm/core';
 import { BaseEntity } from '../shared/bdd/BaseEntity.js';
 import { Destiny } from '../destiny/destiny.entity.js';
 import { Reservation } from '../reservation/reservation.entity.js';
@@ -18,8 +18,11 @@ export class Flight extends BaseEntity {
     @Property()
     aerolinea!: string;
 
-    @Property()
+    @Property({ nullable: false })
     cantidad_asientos!: number;
+
+    @Property({ nullable: false })
+    capacidad_restante!: number;
     
     @Property({ fieldName: 'montoVuelo'})
     montoVuelo!: number;
@@ -27,12 +30,15 @@ export class Flight extends BaseEntity {
     @Property()
     origen!: string;
 
+    @Property({ nullable: true })
+    distancia_km?: number;
+
     @ManyToOne(() => Destiny)
     destino!: Destiny;
 
-    @OneToMany(() => Reservation, reservation => reservation.flight)
+    @OneToMany(() => Reservation, reservation => reservation.flight, { cascade: [Cascade.REMOVE] })
     reservations = new Collection<Reservation>(this);
 
-    @OneToMany(() => Favorite, favorite => favorite.flight)
+    @OneToMany(() => Favorite, favorite => favorite.flight, { cascade: [Cascade.REMOVE] })
     favorites = new Collection<Favorite>(this);
 }
